@@ -127,7 +127,6 @@
       <div class="panel">
         <div class="btn-row">
           <button onclick="goHome()">← Home</button>
-          <button class="btn" onclick="loadDefaultWorkTemplates()">重新載入預設工作任務</button>
         </div>
         <h2>Work Plan</h2>
         <div class="small">建立今天工作任務，儲存後會送去 Today Work ToDoList。</div>
@@ -174,15 +173,16 @@
         </div>
 
         <div class="btn-row" style="margin-top:12px">
-          <button class="btn" onclick="addPlanTodoFromInput()">＋ 加入工作項目</button>
+          <button class="btn" onclick="saveInputDirectToTodayPlanned()">儲存為 Planned → Today Work ToDoList</button>
+          <button class="btn-ok" onclick="addPlanTodoFromInput()">新增預設任務 Card</button>
         </div>
 
         <div id="planTodoCards" class="cards two" style="margin-top:12px"></div>
 
         <div class="sep"></div>
         <div class="btn-row">
-          <button class="btn" onclick="savePlanToToday('planned')">儲存為 Planned → Today Work ToDoList</button>
-          <button class="btn-ok" onclick="savePlanToToday('done')">儲存為 Done → Today Work ToDoList</button>
+          <button class="btn" onclick="savePlanToToday('planned')">儲存勾選 Card 為 Planned → Today Work ToDoList</button>
+          <button class="btn-ok" onclick="savePlanToToday('done')">儲存勾選 Card 為 Done → Today Work ToDoList</button>
         </div>
       </div>
     </section>
@@ -239,14 +239,7 @@
       history24: 'workPlanner_history24_v2'
     };
 
-    const DEFAULT_WORK_TEMPLATES = [
-      { text:'Reply manager email', category:'Email', priority:'P1', minutes:20 },
-      { text:'Prepare A12 material', category:'Teaching', priority:'P1', minutes:45 },
-      { text:'Review course notes', category:'Review', priority:'P2', minutes:30 },
-      { text:'Weekly work planning', category:'Planning', priority:'P2', minutes:20 },
-      { text:'Deep work block', category:'Deep Work', priority:'P1', minutes:60 },
-      { text:'Admin follow-up', category:'Admin', priority:'P3', minutes:15 }
-    ];
+    const DEFAULT_WORK_TEMPLATES = [];
 
     function pad2(n){ return String(n).padStart(2,'0'); }
     function now(){ return Date.now(); }
@@ -257,7 +250,6 @@
     }
     function todayStr(){ return getTodayStrLocal(); }
     function escapeHtml(s){ return (s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-    function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
     function fmtTime(ts){
       const d = new Date(ts || Date.now());
       let h = d.getHours();
@@ -298,7 +290,8 @@
       const todayItems = [];
       const oldItems = [];
       all.forEach(item => {
-        if(item.date === today) todayItems.push(item); else oldItems.push({...item, archivedAt: now(), archivedReason: 'date-rollover'});
+        if(item.date === today) todayItems.push(item);
+        else oldItems.push({...item, archivedAt: now(), archivedReason: 'date-rollover'});
       });
       if(oldItems.length){
         const merged = pruneHistory24().concat(oldItems);
@@ -337,6 +330,21 @@
       document.getElementById('planNewMinutes').value = '';
     }
 
+    function getInputTaskPayload(){
+      const text = (document.getElementById('planNewTodo').value || '').trim();
+      const category = document.getElementById('planNewCategory').value;
+      const priority = document.getElementById('planNewPriority').value;
+      const minutesRaw = document.getElementById('planNewMinutes').value;
+      const minutes = minutesRaw === '' ? null : Math.max(0, Math.round(Number(minutesRaw) || 0));
+      if(!text) return null;
+      return { text, category, priority, minutes };
+    }
+
+    function clearPlanInput(){
+      document.getElementById('planNewTodo').value = '';
+      document.getElementById('planNewMinutes').value = '';
+    }
+
     function buildTaskDisplay(item){
       const durTag = item.minutes ? `<span class="pill">${item.minutes}m</span>` : '';
       const catTag = item.category ? `<span class="pill">${escapeHtml(item.category)}</span>` : '';
@@ -370,15 +378,46 @@
     }
 
     function addPlanTodoFromInput(){
-      const text = (document.getElementById('planNewTodo').value || '').trim();
-      const category = document.getElementById('planNewCategory').value;
-      const priority = document.getElementById('planNewPriority').value;
-      const minutesRaw = document.getElementById('planNewMinutes').value;
-      const minutes = minutesRaw === '' ? null : Math.max(0, Math.round(Number(minutesRaw) || 0));
-      if(!text) return;
-      addPlanTodoCard({ text, category, priority, minutes });
-      document.getElementById('planNewTodo').value = '';
-      document.getElementById('planNewMinutes').value = '';
+      const payload = getInputTaskPayload();
+      if(!payload){
+        alert('請先輸入工作項目');
+        return;
+      }
+      addPlanTodoCard(payload);
+      clearPlanInput();
+    }
+
+    function saveInputDirectToTodayPlanned(){
+      const payload = getInputTaskPayload();
+      if(!payload){
+        alert('請先輸入工作項目');
+        return;
+      }
+
+      moveOldTodayTodosToHistory();
+      const todos = getTodayTodos();
+      const createdAt = now();
+
+      todos.push({
+        id: uid(),
+        text: payload.text,
+        displayText: payload.text,
+        category: payload.category || 'Others',
+        priority: payload.priority || 'P2',
+        minutes: payload.minutes == null ? null : Number(payload.minutes),
+        date: todayStr(),
+        status: 'planned',
+        focused: false,
+        createdAt,
+        updatedAt: createdAt,
+        source: 'work-plan-direct'
+      });
+
+      setTodayTodos(todos);
+      clearPlanInput();
+      updateHomeStats();
+      alert('已直接儲存為 Planned → Today Work ToDoList');
+      showPage('pageToday');
     }
 
     function selectAllPlanTodos(){
@@ -387,6 +426,7 @@
         cb.closest('.todo-card').classList.add('selected');
       });
     }
+
     function clearAllPlanTodos(){
       document.querySelectorAll('#planTodoCards .todo-card input[type="checkbox"]').forEach(cb => {
         cb.checked = false;
@@ -398,11 +438,16 @@
       const picked = Array.from(document.querySelectorAll('#planTodoCards .todo-card'))
         .filter(card => card.querySelector('input').checked)
         .map(card => JSON.parse(card.dataset.payload || '{}'));
-      if(!picked.length){ alert('請至少選擇一項工作任務'); return; }
+
+      if(!picked.length){
+        alert('請至少選擇一項工作任務 Card');
+        return;
+      }
 
       moveOldTodayTodosToHistory();
       const todos = getTodayTodos();
       const createdAt = now();
+
       picked.forEach(item => {
         todos.push({
           id: uid(),
@@ -416,9 +461,10 @@
           focused: false,
           createdAt,
           updatedAt: createdAt,
-          source: 'work-plan'
+          source: 'work-plan-card'
         });
       });
+
       setTodayTodos(todos);
       updateHomeStats();
       alert(`已加入 Today Work ToDoList：${picked.length} 項`);
@@ -460,7 +506,11 @@
     function renderTodayCards(list, elId, allowActions){
       const host = document.getElementById(elId);
       host.innerHTML = '';
-      if(!list.length){ host.innerHTML = '<div class="empty">沒有資料</div>'; return; }
+      if(!list.length){
+        host.innerHTML = '<div class="empty">沒有資料</div>';
+        return;
+      }
+
       list
         .slice()
         .sort((a,b) => {
@@ -551,10 +601,12 @@
       const planned = todos.filter(x => x.status === 'planned').length;
       const done = todos.filter(x => x.status === 'done').length;
       const focus = todos.filter(x => x.focused).length;
+
       document.getElementById('todayStats1').textContent = `${planned} / ${done}`;
       document.getElementById('todayStatsFocus').textContent = focus;
       document.getElementById('todayStats2').textContent = todos.length;
       document.getElementById('todayStats3').textContent = hist.length;
+
       renderTodayCards(todos, 'todayList', true);
       renderTodayCards(hist, 'history24List', false);
       document.getElementById('todayExportPreview').textContent = buildTodayExportText();
@@ -591,9 +643,11 @@
         {text:'Task A', priority:'P1', category:'Email', status:'planned', focused:true, createdAt:1},
         {text:'Task B', priority:'P2', category:'Admin', status:'done', focused:false, createdAt:2}
       ];
+
       ok('todayStr() returns YYYY-MM-DD', /^\d{4}-\d{2}-\d{2}$/.test(todayStr()));
       ok('priorityWeight(P1) === 1', priorityWeight('P1') === 1);
       ok('priorityWeight(P3) === 3', priorityWeight('P3') === 3);
+      ok('DEFAULT_WORK_TEMPLATES is empty', Array.isArray(DEFAULT_WORK_TEMPLATES) && DEFAULT_WORK_TEMPLATES.length === 0);
       ok('buildTodayExportText is string after temp save', (() => {
         const backup = getTodayTodos();
         setTodayTodos(demo.map((x,i)=>({...x,id:'t'+i,date:todayStr(),updatedAt:3,source:'test',minutes:30,displayText:x.text})));
@@ -601,6 +655,7 @@
         setTodayTodos(backup);
         return typeof s === 'string' && s.includes('[Planned]') && s.includes('[Done]');
       })());
+
       document.getElementById('tests').textContent = out.join('\n');
     }
 
