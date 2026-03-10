@@ -85,7 +85,6 @@
     .muted-block{padding:10px 12px;background:#0e142b;border:1px dashed #2a3767;border-radius:12px;color:var(--muted)}
     .quick-grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
 
-    /* Today page compact mode */
     .today-top .btn-row button{
       padding:6px 10px;
       font-size:.78rem;
@@ -169,28 +168,6 @@
       min-width:0;
       flex:1 1 auto;
     }
-    .today-task-badges{
-      display:flex;
-      gap:4px;
-      flex:0 0 auto;
-    }
-    .today-mini-pill{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      padding:1px 6px;
-      min-height:18px;
-      border-radius:999px;
-      border:1px solid #2a3767;
-      background:#101936;
-      color:var(--muted);
-      font-size:.62rem;
-      line-height:1;
-      white-space:nowrap;
-    }
-    .today-mini-pill.priority-p1{border-color:#6f4250;color:#ffb3c0;background:#26151a}
-    .today-mini-pill.priority-p2{border-color:#57401a;color:#ffd37a;background:#2b1e0e}
-    .today-mini-pill.priority-p3{border-color:#21457a;color:#93c1ff;background:#0f1e36}
     .today-task-time{
       font-size:.68rem;
       color:var(--muted);
@@ -254,9 +231,6 @@
       }
       .today-task-title-row{
         align-items:flex-start;
-      }
-      .today-task-badges{
-        flex-wrap:wrap;
       }
       .today-task-actions{
         justify-content:flex-start;
@@ -378,7 +352,7 @@
           <button class="btn-danger" onclick="clear24hHistory()">清除最近 24 小時紀錄</button>
         </div>
         <h2>Today Work ToDoList</h2>
-        <div class="small">Today task 區已改成橫向緊湊設計：盡量先完整顯示 task 文字，Planned / Done / Delete 按鈕縮細並排，減少佔位。</div>
+        <div class="small">Today Work Tasks 已移除每項任務的 P2 / Admin / Minutes 顯示，只保留任務名稱與操作按鈕。</div>
       </div>
 
       <div class="panel">
@@ -713,11 +687,6 @@
                 <div class="today-task-main">
                   <div class="today-task-title-row">
                     <div class="today-task-title" title="${escapeHtml(item.displayText || item.text)}">${escapeHtml(item.displayText || item.text)}</div>
-                    <div class="today-task-badges">
-                      ${item.priority ? `<span class="today-mini-pill ${getPriorityClass(item.priority)}">${escapeHtml(item.priority)}</span>` : ''}
-                      ${item.category ? `<span class="today-mini-pill">${escapeHtml(item.category)}</span>` : ''}
-                      ${item.minutes ? `<span class="today-mini-pill">${item.minutes}m</span>` : ''}
-                    </div>
                   </div>
                   <div class="today-task-time">
                     ${item.status==='done' ? 'Done' : 'Planned'} ・ ${escapeHtml(fmtDateTime(item.updatedAt || item.createdAt))}
