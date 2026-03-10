@@ -125,50 +125,95 @@
 
     .today-task-card{
       display:grid;
-      grid-template-columns:auto 1fr auto;
-      gap:10px;
+      grid-template-columns: minmax(0,1fr) auto;
+      gap:8px;
       align-items:center;
       background:#0e142b;
       border:1px solid var(--line);
       border-radius:12px;
-      padding:10px 12px;
+      padding:8px 10px;
     }
     .today-task-card.done{
-      opacity:.78;
+      opacity:.82;
       border-color:#215b49;
     }
-    .today-task-card input[type="checkbox"]{
-      width:18px;
-      height:18px;
-      margin:0;
+    .today-task-left{
+      display:flex;
+      align-items:flex-start;
+      gap:8px;
+      min-width:0;
+    }
+    .today-task-check{
+      width:16px !important;
+      min-width:16px;
+      height:16px;
+      margin-top:2px;
+      flex:0 0 auto;
     }
     .today-task-main{
       min-width:0;
     }
-    .today-task-title{
-      font-size:.94rem;
-      line-height:1.35;
-      word-break:break-word;
+    .today-task-title-row{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      min-width:0;
+      flex-wrap:nowrap;
     }
-    .today-task-time{
-      font-size:.72rem;
+    .today-task-title{
+      font-size:.88rem;
+      line-height:1.3;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      min-width:0;
+      flex:1 1 auto;
+    }
+    .today-task-badges{
+      display:flex;
+      gap:4px;
+      flex:0 0 auto;
+    }
+    .today-mini-pill{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:1px 6px;
+      min-height:18px;
+      border-radius:999px;
+      border:1px solid #2a3767;
+      background:#101936;
       color:var(--muted);
-      margin-top:4px;
+      font-size:.62rem;
+      line-height:1;
+      white-space:nowrap;
+    }
+    .today-mini-pill.priority-p1{border-color:#6f4250;color:#ffb3c0;background:#26151a}
+    .today-mini-pill.priority-p2{border-color:#57401a;color:#ffd37a;background:#2b1e0e}
+    .today-mini-pill.priority-p3{border-color:#21457a;color:#93c1ff;background:#0f1e36}
+    .today-task-time{
+      font-size:.68rem;
+      color:var(--muted);
+      margin-top:3px;
+      line-height:1.2;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
     .today-task-actions{
       display:flex;
-      flex-direction:column;
-      gap:6px;
-      align-items:stretch;
-      justify-content:center;
-      width:72px;
+      align-items:center;
+      gap:4px;
+      flex:0 0 auto;
+      white-space:nowrap;
     }
     .today-task-actions button{
-      width:100%;
-      padding:4px 6px;
-      font-size:.5rem;
-      line-height:1.15;
-      border-radius:8px;
+      width:auto;
+      min-width:0;
+      padding:3px 7px;
+      font-size:.62rem;
+      line-height:1.1;
+      border-radius:7px;
     }
 
     .history-card{
@@ -189,15 +234,34 @@
       color:var(--muted);
     }
 
-    @media (max-width:560px){
+    @media (max-width:760px){
       .today-task-card{
-        grid-template-columns:auto 1fr;
+        grid-template-columns:1fr;
         align-items:start;
       }
       .today-task-actions{
-        grid-column:2 / 3;
-        width:72px;
-        margin-top:4px;
+        width:100%;
+        justify-content:flex-end;
+        padding-left:24px;
+      }
+    }
+
+    @media (max-width:520px){
+      .today-task-title{
+        white-space:normal;
+        overflow:visible;
+        text-overflow:clip;
+      }
+      .today-task-title-row{
+        align-items:flex-start;
+      }
+      .today-task-badges{
+        flex-wrap:wrap;
+      }
+      .today-task-actions{
+        justify-content:flex-start;
+        padding-left:24px;
+        flex-wrap:wrap;
       }
     }
   </style>
@@ -314,7 +378,7 @@
           <button class="btn-danger" onclick="clear24hHistory()">清除最近 24 小時紀錄</button>
         </div>
         <h2>Today Work ToDoList</h2>
-        <div class="small">今天工作任務已改為簡潔顯示，方便快速閱讀與整理。</div>
+        <div class="small">Today task 區已改成橫向緊湊設計：盡量先完整顯示 task 文字，Planned / Done / Delete 按鈕縮細並排，減少佔位。</div>
       </div>
 
       <div class="panel">
@@ -619,6 +683,11 @@
       return priority === 'P1' ? 1 : priority === 'P2' ? 2 : 3;
     }
 
+    function getPriorityClass(priority){
+      const p = String(priority || '').toUpperCase();
+      return p === 'P1' ? 'priority-p1' : p === 'P2' ? 'priority-p2' : 'priority-p3';
+    }
+
     function renderTodayCards(list, elId, allowActions){
       const host = document.getElementById(elId);
       host.innerHTML = '';
@@ -639,11 +708,20 @@
             const div = document.createElement('div');
             div.className = `today-task-card ${item.status==='done'?'done':''}`;
             div.innerHTML = `
-              <input type="checkbox" ${item.status==='done' ? 'checked' : ''} />
-              <div class="today-task-main">
-                <div class="today-task-title">${escapeHtml(item.displayText || item.text)}</div>
-                <div class="today-task-time">
-                  ${item.status==='done' ? 'Done' : 'Planned'} ・ ${escapeHtml(fmtDateTime(item.updatedAt || item.createdAt))}
+              <div class="today-task-left">
+                <input class="today-task-check" type="checkbox" ${item.status==='done' ? 'checked' : ''} />
+                <div class="today-task-main">
+                  <div class="today-task-title-row">
+                    <div class="today-task-title" title="${escapeHtml(item.displayText || item.text)}">${escapeHtml(item.displayText || item.text)}</div>
+                    <div class="today-task-badges">
+                      ${item.priority ? `<span class="today-mini-pill ${getPriorityClass(item.priority)}">${escapeHtml(item.priority)}</span>` : ''}
+                      ${item.category ? `<span class="today-mini-pill">${escapeHtml(item.category)}</span>` : ''}
+                      ${item.minutes ? `<span class="today-mini-pill">${item.minutes}m</span>` : ''}
+                    </div>
+                  </div>
+                  <div class="today-task-time">
+                    ${item.status==='done' ? 'Done' : 'Planned'} ・ ${escapeHtml(fmtDateTime(item.updatedAt || item.createdAt))}
+                  </div>
                 </div>
               </div>
               <div class="today-task-actions">
@@ -752,6 +830,7 @@
       ok('priorityWeight(P1) === 1', priorityWeight('P1') === 1);
       ok('priorityWeight(P3) === 3', priorityWeight('P3') === 3);
       ok('DEFAULT_WORK_TEMPLATES is empty', Array.isArray(DEFAULT_WORK_TEMPLATES) && DEFAULT_WORK_TEMPLATES.length === 0);
+      ok('getPriorityClass(P2) works', getPriorityClass('P2') === 'priority-p2');
       ok('buildTodayExportText is string after temp save', (() => {
         const backup = getTodayTodos();
         setTodayTodos(demo.map((x,i)=>({...x,id:'t'+i,date:todayStr(),updatedAt:3,source:'test',minutes:30,displayText:x.text})));
