@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -386,155 +385,439 @@
     </div>
 
     <div class="sticky-footer small">今天日期：<span id="todayStr"></span></div>
-  </div><script>
+  </div>
 
-const STORAGE_KEYS = {
-  todayTodos: 'workPlanner_todayTodos_v2',
-  history24: 'workPlanner_history24_v2',
-  planCards: 'workPlanner_planCards_v1'
-};
+  <script>
+    const STORAGE_KEYS = {
+      todayTodos: 'workPlanner_todayTodos_v2',
+      history24: 'workPlanner_history24_v2'
+    };
 
-function saveLS(key,val){ localStorage.setItem(key,JSON.stringify(val)); }
-function loadLS(key,fb){ try{const v=JSON.parse(localStorage.getItem(key));return v??fb;}catch{return fb;} }
+    const DEFAULT_WORK_TEMPLATES = [];
 
-function getPlanCards(){ return loadLS(STORAGE_KEYS.planCards,[]); }
-function setPlanCards(arr){ saveLS(STORAGE_KEYS.planCards,arr); }
-
-function getTodayTodos(){ return loadLS(STORAGE_KEYS.todayTodos,[]); }
-function setTodayTodos(arr){ saveLS(STORAGE_KEYS.todayTodos,arr); }
-
-function uid(){ return 'id_'+Math.random().toString(36).slice(2,10); }
-
-function addPlanTodoCard(item){
-
-  const box=document.getElementById('planTodoCards');
-  const id=uid();
-
-  const label=document.createElement('label');
-  label.className='todo-card';
-
-  label.innerHTML=`
-<input type="checkbox">
-<div>
-<div class="todo-title">${item.text}</div>
-<div class="todo-meta">點選後會加入今天工作任務池</div>
-</div>
-<div>${item.priority||'P2'}</div>
-`;
-
-  label.dataset.payload=JSON.stringify(item);
-
-  label.addEventListener('click',e=>{
-    const cb=label.querySelector('input');
-    if(e.target.tagName!=='INPUT'){
-      cb.checked=!cb.checked;
-      e.preventDefault();
+    function pad2(n){ return String(n).padStart(2,'0'); }
+    function now(){ return Date.now(); }
+    function uid(){ return 'id_' + Math.random().toString(36).slice(2,10); }
+    function getTodayStrLocal(){
+      const d = new Date();
+      return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
     }
-    label.classList.toggle('selected',cb.checked);
-  });
+    function todayStr(){ return getTodayStrLocal(); }
+    function escapeHtml(s){ return (s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function fmtTime(ts){
+      const d = new Date(ts || Date.now());
+      let h = d.getHours();
+      const m = pad2(d.getMinutes());
+      const ampm = h >= 12 ? 'pm' : 'am';
+      h = h % 12 || 12;
+      return `${h}:${m}${ampm}`;
+    }
+    function fmtDate(ts){
+      const d = new Date(ts || Date.now());
+      return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+    }
+    function fmtDateTime(ts){ return `${fmtDate(ts)} ${fmtTime(ts)}`; }
 
-  box.appendChild(label);
-}
+    function saveLS(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
+    function loadLS(key, fallback){
+      try {
+        const v = JSON.parse(localStorage.getItem(key));
+        return Array.isArray(fallback) ? (Array.isArray(v) ? v : fallback) : (v ?? fallback);
+      } catch { return fallback; }
+    }
 
-function renderPlanCards(){
+    function getTodayTodos(){ return loadLS(STORAGE_KEYS.todayTodos, []); }
+    function setTodayTodos(arr){ saveLS(STORAGE_KEYS.todayTodos, arr); }
+    function getHistory24(){ return loadLS(STORAGE_KEYS.history24, []); }
+    function setHistory24(arr){ saveLS(STORAGE_KEYS.history24, arr); }
 
-  const box=document.getElementById('planTodoCards');
-  box.innerHTML='';
+    function pruneHistory24(){
+      const cutoff = now() - 24*60*60*1000;
+      const pruned = getHistory24().filter(x => (x.createdAt || 0) >= cutoff || (x.updatedAt || 0) >= cutoff || (x.archivedAt || 0) >= cutoff);
+      setHistory24(pruned);
+      return pruned;
+    }
 
-  const cards=getPlanCards();
+    function moveOldTodayTodosToHistory(){
+      const all = getTodayTodos();
+      const today = todayStr();
+      const todayItems = [];
+      const oldItems = [];
+      all.forEach(item => {
+        if(item.date === today) todayItems.push(item);
+        else oldItems.push({...item, archivedAt: now(), archivedReason: 'date-rollover'});
+      });
+      if(oldItems.length){
+        const merged = pruneHistory24().concat(oldItems);
+        setHistory24(merged);
+      }
+      setTodayTodos(todayItems);
+    }
 
-  cards.forEach(addPlanTodoCard);
-}
+    function showPage(id){
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      if(id === 'pageHome') updateHomeStats();
+      if(id === 'pagePlan') loadDefaultWorkTemplates();
+      if(id === 'pageToday') refreshTodayPage();
+    }
+    function goHome(){ showPage('pageHome'); }
 
-function addPlanTodoFromInput(){
+    function updateHomeStats(){
+      moveOldTodayTodosToHistory();
+      const todos = getTodayTodos();
+      const hist = pruneHistory24();
+      document.getElementById('homeTodayCount').textContent = todos.length;
+      document.getElementById('homeDoneCount').textContent = todos.filter(x => x.status === 'done').length;
+      document.getElementById('homeFocusCount').textContent = todos.filter(x => x.focused).length;
+      document.getElementById('home24Count').textContent = hist.length;
+    }
 
-  const text=document.getElementById('planNewTodo').value.trim();
-  const category=document.getElementById('planNewCategory').value;
-  const priority=document.getElementById('planNewPriority').value;
-  const minutes=document.getElementById('planNewMinutes').value;
+    function loadDefaultWorkTemplates(){
+      document.getElementById('planDateTime').textContent = fmtDateTime();
+      const box = document.getElementById('planTodoCards');
+      box.innerHTML = '';
+      DEFAULT_WORK_TEMPLATES.forEach(addPlanTodoCard);
+      document.getElementById('planNewTodo').value = '';
+      document.getElementById('planNewCategory').value = 'Admin';
+      document.getElementById('planNewPriority').value = 'P2';
+      document.getElementById('planNewMinutes').value = '';
+    }
 
-  if(!text){
-    alert('請輸入任務');
-    return;
-  }
+    function getInputTaskPayload(){
+      const text = (document.getElementById('planNewTodo').value || '').trim();
+      const category = document.getElementById('planNewCategory').value;
+      const priority = document.getElementById('planNewPriority').value;
+      const minutesRaw = document.getElementById('planNewMinutes').value;
+      const minutes = minutesRaw === '' ? null : Math.max(0, Math.round(Number(minutesRaw) || 0));
+      if(!text) return null;
+      return { text, category, priority, minutes };
+    }
 
-  const cards=getPlanCards();
+    function clearPlanInput(){
+      document.getElementById('planNewTodo').value = '';
+      document.getElementById('planNewMinutes').value = '';
+    }
 
-  cards.push({
-    id:uid(),
-    text,
-    category,
-    priority,
-    minutes
-  });
+    function buildTaskDisplay(item){
+      const durTag = item.minutes ? `<span class="pill">${item.minutes}m</span>` : '';
+      const catTag = item.category ? `<span class="pill">${escapeHtml(item.category)}</span>` : '';
+      const priTag = item.priority ? `<span class="pill">${escapeHtml(item.priority)}</span>` : '';
+      return `${escapeHtml(item.text)} ${priTag}${catTag}${durTag}`;
+    }
 
-  setPlanCards(cards);
+    function addPlanTodoCard(item){
+      const box = document.getElementById('planTodoCards');
+      const id = uid();
+      const label = document.createElement('label');
+      label.className = 'todo-card';
+      label.innerHTML = `
+        <input type="checkbox" id="${id}" />
+        <div>
+          <div class="todo-title">${buildTaskDisplay(item)}</div>
+          <div class="todo-meta">點選後會加入今天工作任務池</div>
+        </div>
+        <div class="small">${escapeHtml(item.priority || 'P2')}</div>
+      `;
+      label.dataset.payload = JSON.stringify(item);
+      label.addEventListener('click', (e) => {
+        const cb = label.querySelector('input');
+        if(e.target.tagName.toLowerCase() !== 'input'){
+          cb.checked = !cb.checked;
+          e.preventDefault();
+        }
+        label.classList.toggle('selected', cb.checked);
+      });
+      box.appendChild(label);
+    }
 
-  renderPlanCards();
+    function addPlanTodoFromInput(){
+      const payload = getInputTaskPayload();
+      if(!payload){
+        alert('請先輸入工作項目');
+        return;
+      }
+      addPlanTodoCard(payload);
+      clearPlanInput();
+    }
 
-  document.getElementById('planNewTodo').value='';
-  document.getElementById('planNewMinutes').value='';
-}
+    function saveInputDirectToTodayPlanned(){
+      const payload = getInputTaskPayload();
+      if(!payload){
+        alert('請先輸入工作項目');
+        return;
+      }
 
-function loadDefaultWorkTemplates(){
+      moveOldTodayTodosToHistory();
+      const todos = getTodayTodos();
+      const createdAt = now();
 
-  document.getElementById('planDateTime').textContent=new Date().toLocaleString();
+      todos.push({
+        id: uid(),
+        text: payload.text,
+        displayText: payload.text,
+        category: payload.category || 'Others',
+        priority: payload.priority || 'P2',
+        minutes: payload.minutes == null ? null : Number(payload.minutes),
+        date: todayStr(),
+        status: 'planned',
+        focused: false,
+        createdAt,
+        updatedAt: createdAt,
+        source: 'work-plan-direct'
+      });
 
-  renderPlanCards();
-}
+      setTodayTodos(todos);
+      clearPlanInput();
+      updateHomeStats();
+      alert('已直接儲存為 Planned → Today Work ToDoList');
+      showPage('pageToday');
+    }
 
-function selectAllPlanTodos(){
-document.querySelectorAll('#planTodoCards input').forEach(cb=>{
-cb.checked=true;
-cb.closest('.todo-card').classList.add('selected');
-});
-}
+    function selectAllPlanTodos(){
+      document.querySelectorAll('#planTodoCards .todo-card input[type="checkbox"]').forEach(cb => {
+        cb.checked = true;
+        cb.closest('.todo-card').classList.add('selected');
+      });
+    }
 
-function clearAllPlanTodos(){
-document.querySelectorAll('#planTodoCards input').forEach(cb=>{
-cb.checked=false;
-cb.closest('.todo-card').classList.remove('selected');
-});
-}
+    function clearAllPlanTodos(){
+      document.querySelectorAll('#planTodoCards .todo-card input[type="checkbox"]').forEach(cb => {
+        cb.checked = false;
+        cb.closest('.todo-card').classList.remove('selected');
+      });
+    }
 
-function savePlanToToday(state){
+    function savePlanToToday(state){
+      const picked = Array.from(document.querySelectorAll('#planTodoCards .todo-card'))
+        .filter(card => card.querySelector('input').checked)
+        .map(card => JSON.parse(card.dataset.payload || '{}'));
 
-  const cards=document.querySelectorAll('#planTodoCards .todo-card');
+      if(!picked.length){
+        alert('請至少選擇一項工作任務 Card');
+        return;
+      }
 
-  const todos=getTodayTodos();
+      moveOldTodayTodosToHistory();
+      const todos = getTodayTodos();
+      const createdAt = now();
 
-  cards.forEach(card=>{
-    const cb=card.querySelector('input');
-    if(!cb.checked)return;
+      picked.forEach(item => {
+        todos.push({
+          id: uid(),
+          text: item.text,
+          displayText: item.text,
+          category: item.category || 'Others',
+          priority: item.priority || 'P2',
+          minutes: item.minutes == null ? null : Number(item.minutes),
+          date: todayStr(),
+          status: state,
+          focused: false,
+          createdAt,
+          updatedAt: createdAt,
+          source: 'work-plan-card'
+        });
+      });
 
-    const item=JSON.parse(card.dataset.payload);
+      setTodayTodos(todos);
+      updateHomeStats();
+      alert(`已加入 Today Work ToDoList：${picked.length} 項`);
+      showPage('pageToday');
+    }
 
-    todos.push({
-      id:uid(),
-      text:item.text,
-      displayText:item.text,
-      category:item.category,
-      priority:item.priority,
-      minutes:item.minutes,
-      date:new Date().toISOString().slice(0,10),
-      status:state,
-      createdAt:Date.now()
-    });
+    function markTodoStatus(id, status){
+      const todos = getTodayTodos().map(item => item.id === id ? {...item, status, updatedAt: now()} : item);
+      setTodayTodos(todos);
+      refreshTodayPage();
+      updateHomeStats();
+    }
 
-  });
+    function toggleFocus(id){
+      const todos = getTodayTodos().map(item => item.id === id ? {...item, focused: !item.focused, updatedAt: now()} : item);
+      setTodayTodos(todos);
+      refreshTodayPage();
+      updateHomeStats();
+    }
 
-  setTodayTodos(todos);
+    function deleteTodayTodo(id){
+      const todos = getTodayTodos();
+      const found = todos.find(x => x.id === id);
+      const remain = todos.filter(x => x.id !== id);
+      setTodayTodos(remain);
+      if(found){
+        const hist = pruneHistory24();
+        hist.unshift({...found, archivedAt: now(), archivedReason: 'manual-delete'});
+        setHistory24(hist);
+      }
+      refreshTodayPage();
+      updateHomeStats();
+    }
 
-  alert('已加入 Today Work');
+    function priorityWeight(priority){
+      return priority === 'P1' ? 1 : priority === 'P2' ? 2 : 3;
+    }
 
-}
+    function getPriorityClass(priority){
+      const p = String(priority || '').toUpperCase();
+      return p === 'P1' ? 'priority-p1' : p === 'P2' ? 'priority-p2' : 'priority-p3';
+    }
 
-(function init(){
+    function renderTodayCards(list, elId, allowActions){
+      const host = document.getElementById(elId);
+      host.innerHTML = '';
+      if(!list.length){
+        host.innerHTML = '<div class="empty">沒有資料</div>';
+        return;
+      }
 
-renderPlanCards();
+      list
+        .slice()
+        .sort((a,b) => {
+          if((a.status === 'done') !== (b.status === 'done')) return a.status === 'done' ? 1 : -1;
+          if(priorityWeight(a.priority) !== priorityWeight(b.priority)) return priorityWeight(a.priority) - priorityWeight(b.priority);
+          return (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0);
+        })
+        .forEach(item => {
+          if(allowActions){
+            const div = document.createElement('div');
+            div.className = `today-task-card ${item.status==='done'?'done':''}`;
+            div.innerHTML = `
+              <div class="today-task-left">
+                <input class="today-task-check" type="checkbox" ${item.status==='done' ? 'checked' : ''} />
+                <div class="today-task-main">
+                  <div class="today-task-title-row">
+                    <div class="today-task-title" title="${escapeHtml(item.displayText || item.text)}">${escapeHtml(item.displayText || item.text)}</div>
+                  </div>
+                  <div class="today-task-time">
+                    ${item.status==='done' ? 'Done' : 'Planned'} ・ ${escapeHtml(fmtDateTime(item.updatedAt || item.createdAt))}
+                  </div>
+                </div>
+              </div>
+              <div class="today-task-actions">
+                <button onclick="markTodoStatus('${item.id}','planned')">Planned</button>
+                <button class="btn-ok" onclick="markTodoStatus('${item.id}','done')">Done</button>
+                <button class="btn-danger" onclick="deleteTodayTodo('${item.id}')">Delete</button>
+              </div>
+            `;
+            const cb = div.querySelector('input[type="checkbox"]');
+            cb.addEventListener('change', () => markTodoStatus(item.id, cb.checked ? 'done' : 'planned'));
+            host.appendChild(div);
+          } else {
+            const div = document.createElement('div');
+            div.className = 'history-card';
+            div.innerHTML = `
+              <div class="history-title">${escapeHtml(item.displayText || item.text)}</div>
+              <div class="history-meta">
+                ${item.status === 'done' ? 'Done' : 'Planned'} ・ ${escapeHtml(fmtDateTime(item.updatedAt || item.createdAt))}
+              </div>
+            `;
+            host.appendChild(div);
+          }
+        });
+    }
 
-})();
+    function buildTodayExportText(){
+      const todos = getTodayTodos().slice().sort((a,b) => {
+        if((a.status === 'done') !== (b.status === 'done')) return a.status === 'done' ? 1 : -1;
+        if(priorityWeight(a.priority) !== priorityWeight(b.priority)) return priorityWeight(a.priority) - priorityWeight(b.priority);
+        return (a.createdAt || 0) - (b.createdAt || 0);
+      });
 
-</script>
+      const lines = [];
+      lines.push(`Work ToDoList — ${todayStr()}`);
+      lines.push(`Updated: ${fmtDateTime()}`);
+      lines.push('');
+
+      const planned = todos.filter(x => x.status !== 'done');
+      lines.push('[Planned]');
+      if(planned.length){
+        planned.forEach((t,i) => lines.push(`${i+1}. ${t.text}`));
+      } else {
+        lines.push('None');
+      }
+      lines.push('');
+
+      const done = todos.filter(x => x.status === 'done');
+      lines.push('[Done]');
+      if(done.length){
+        done.forEach((t,i) => lines.push(`${i+1}. ${t.text}`));
+      } else {
+        lines.push('None');
+      }
+      return lines.join('\n');
+    }
+
+    function refreshTodayPage(){
+      moveOldTodayTodosToHistory();
+      const todos = getTodayTodos();
+      const hist = pruneHistory24();
+      const planned = todos.filter(x => x.status === 'planned').length;
+      const done = todos.filter(x => x.status === 'done').length;
+
+      document.getElementById('todayStats1').textContent = `${planned} / ${done}`;
+      document.getElementById('todayStats2').textContent = todos.length;
+      document.getElementById('todayStats3').textContent = hist.length;
+
+      renderTodayCards(todos, 'todayList', true);
+      renderTodayCards(hist, 'history24List', false);
+      document.getElementById('todayExportPreview').textContent = buildTodayExportText();
+    }
+
+    async function copyTodayWorkText(){
+      const text = buildTodayExportText();
+      try {
+        await navigator.clipboard.writeText(text);
+        alert('已複製工作文字');
+      } catch {
+        alert('複製失敗，請手動複製。');
+      }
+    }
+
+    function sendTodayToShortcut(){
+      const text = buildTodayExportText();
+      const shortcutName = 'SaveToWork';
+      const url = `shortcuts://run-shortcut?name=${encodeURIComponent(shortcutName)}&input=text&text=${encodeURIComponent(text)}`;
+      window.location.href = url;
+    }
+
+    function clear24hHistory(){
+      if(!confirm('清除最近 24 小時紀錄？')) return;
+      setHistory24([]);
+      refreshTodayPage();
+      updateHomeStats();
+    }
+
+    function runDevTests(){
+      const out = [];
+      const ok = (name, cond) => out.push(`${cond ? '✅ PASS' : '❌ FAIL'}  ${name}`);
+      const demo = [
+        {text:'Task A', priority:'P1', category:'Email', status:'planned', focused:true, createdAt:1},
+        {text:'Task B', priority:'P2', category:'Admin', status:'done', focused:false, createdAt:2}
+      ];
+
+      ok('todayStr() returns YYYY-MM-DD', /^\d{4}-\d{2}-\d{2}$/.test(todayStr()));
+      ok('priorityWeight(P1) === 1', priorityWeight('P1') === 1);
+      ok('priorityWeight(P3) === 3', priorityWeight('P3') === 3);
+      ok('DEFAULT_WORK_TEMPLATES is empty', Array.isArray(DEFAULT_WORK_TEMPLATES) && DEFAULT_WORK_TEMPLATES.length === 0);
+      ok('getPriorityClass(P2) works', getPriorityClass('P2') === 'priority-p2');
+      ok('buildTodayExportText is string after temp save', (() => {
+        const backup = getTodayTodos();
+        setTodayTodos(demo.map((x,i)=>({...x,id:'t'+i,date:todayStr(),updatedAt:3,source:'test',minutes:30,displayText:x.text})));
+        const s = buildTodayExportText();
+        setTodayTodos(backup);
+        return typeof s === 'string' && s.includes('[Planned]') && s.includes('[Done]');
+      })());
+
+      document.getElementById('tests').textContent = out.join('\n');
+    }
+
+    (function init(){
+      document.getElementById('todayStr').textContent = todayStr();
+      moveOldTodayTodosToHistory();
+      updateHomeStats();
+      loadDefaultWorkTemplates();
+      runDevTests();
+    })();
+  </script>
 </body>
 </html>
