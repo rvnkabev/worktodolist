@@ -18,9 +18,6 @@
     }
     .wrap{max-width:1160px;margin:0 auto;padding:20px}
     h1,h2,h3{margin:0 0 12px}
-    h1{font-size:1.9rem}
-    h2{font-size:1.35rem}
-    h3{font-size:1.05rem}
     .sub{color:var(--muted);font-size:.95rem;line-height:1.45}
     .page{display:none}
     .page.active{display:block}
@@ -37,10 +34,10 @@
     .grid-3{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
     .hero-btn, button{
       padding:12px 14px;border-radius:12px;border:1px solid #2a3767;background:#0e142b;color:var(--ink);
-      cursor:pointer;font-size:.95rem
+      cursor:pointer;font-size:1rem
     }
     .hero-btn{min-height:98px;text-align:left}
-    .hero-btn strong{display:block;font-size:1.02rem;margin-bottom:6px}
+    .hero-btn strong{display:block;font-size:1.05rem;margin-bottom:6px}
     .btn{background:var(--accent);border:none;font-weight:700;color:#071326}
     .btn-ok{background:var(--ok);border:none;color:#07271d;font-weight:700}
     .btn-danger{background:var(--danger);border:none;font-weight:700}
@@ -54,9 +51,9 @@
     textarea{min-height:110px;resize:vertical}
     .small{font-size:.85rem;color:var(--muted)}
     .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
-    .pill{display:inline-block;padding:4px 10px;border-radius:999px;border:1px solid #2a3767;background:#0e142b;margin:2px 6px 2px 0;font-size:.78rem}
+    .pill{display:inline-block;padding:4px 10px;border-radius:999px;border:1px solid #2a3767;background:#0e142b;margin:2px 6px 2px 0;font-size:.82rem}
     .tag-ok,.tag-warn,.tag-danger,.tag-info{
-      display:inline-block;padding:2px 8px;border-radius:999px;font-size:.78rem;border:1px solid transparent
+      display:inline-block;padding:2px 8px;border-radius:999px;font-size:.8rem;border:1px solid transparent
     }
     .tag-ok{border-color:#164932;background:#0f2b1e;color:#7dffca}
     .tag-warn{border-color:#57401a;background:#2b1e0e;color:#ffd37a}
@@ -64,26 +61,20 @@
     .tag-info{border-color:#21457a;background:#0f1e36;color:#93c1ff}
     .cards{display:grid;grid-template-columns:1fr;gap:12px}
     @media (min-width:760px){ .cards.two{grid-template-columns:1fr 1fr} }
+
     .todo-card{
-      display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;
+      display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;
       background:#0e142b;border:1px solid var(--line);border-radius:14px;padding:14px;
     }
-    .todo-card.done{opacity:.76;border-color:#215b49}
-    .todo-card.focused{border-color:#547dff;box-shadow:0 0 0 2px rgba(122,162,255,.18) inset}
+    .todo-card.done{opacity:.78;border-color:#215b49}
+    .todo-card.focused{border-color:#547dff;box-shadow:0 0 0 2px rgba(122,162,255,.2) inset}
     .todo-card.selected{outline:2px solid var(--accent)}
-    .todo-main{min-width:0}
-    .todo-head{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
-    .todo-title{font-size:1.08rem;line-height:1.45;font-weight:700;color:#f6f8ff;word-break:break-word}
-    .todo-title-row{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
-    .todo-meta{font-size:.78rem;color:var(--muted);margin-top:8px;line-height:1.5}
-    .todo-meta-quiet{font-size:.75rem;color:#8ea1dd;margin-top:6px;line-height:1.45}
-    .todo-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-    .action-btn{padding:7px 10px;font-size:.8rem;border-radius:10px}
+    .todo-title{font-size:1rem;line-height:1.35}
+    .todo-meta{font-size:.8rem;color:var(--muted);margin-top:4px;line-height:1.5}
+
     .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    .summary-toolbar button{padding:10px 12px;font-size:.88rem}
     .stat{display:flex;gap:12px;flex-wrap:wrap}
     .stat .box{flex:1 1 180px;background:#0e142b;border:1px solid var(--line);border-radius:12px;padding:12px}
-    .summary-number{font-size:1.15rem;font-weight:700}
     .chips{display:flex;flex-wrap:wrap;gap:8px}
     .chip{padding:8px 12px;border:1px solid #2a3767;border-radius:999px;background:#0e142b;cursor:pointer;user-select:none}
     .chip.selected{outline:2px solid var(--accent)}
@@ -93,15 +84,106 @@
     .sticky-footer{position:sticky;bottom:0;background:linear-gradient(180deg,#101736,#0b1020);padding:12px;border-top:1px solid #223061;margin-top:18px}
     .muted-block{padding:10px 12px;background:#0e142b;border:1px dashed #2a3767;border-radius:12px;color:var(--muted)}
     .quick-grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
-    .page-header-compact{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-    .page-header-compact h2{margin:0;font-size:1.15rem}
-    .summary-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
-    .summary-mini{background:#0e142b;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
-    .summary-mini .label{font-size:.76rem;color:var(--muted)}
-    .summary-mini .value{font-size:1rem;font-weight:700;margin-top:4px}
-    .today-main-layout{display:grid;gap:12px;grid-template-columns:1.5fr 1fr}
-    @media (max-width:900px){ .today-main-layout{grid-template-columns:1fr} }
-    .preview-box{font-size:.84rem;line-height:1.5;max-height:420px;overflow:auto}
+
+    /* Today page compact mode */
+    .today-top .btn-row button{
+      padding:6px 10px;
+      font-size:.78rem;
+      border-radius:10px;
+    }
+    .today-top h2{
+      font-size:1.1rem;
+      margin-top:8px;
+      margin-bottom:6px;
+    }
+    .today-top .small{
+      font-size:.78rem;
+    }
+
+    .today-stat{
+      gap:8px;
+    }
+    .today-stat .box{
+      flex:1 1 140px;
+      padding:8px 10px;
+      border-radius:10px;
+    }
+    .today-stat .small{
+      font-size:.66rem;
+      line-height:1.2;
+      margin-bottom:4px;
+    }
+    .today-stat .mono{
+      font-size:.72rem;
+      line-height:1.1;
+    }
+
+    .today-section-title{
+      font-size:1rem;
+      margin-bottom:10px;
+    }
+
+    .today-task-card{
+      display:grid;
+      grid-template-columns:auto 1fr auto;
+      gap:10px;
+      align-items:center;
+      background:#0e142b;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px 12px;
+    }
+    .today-task-card.done{
+      opacity:.78;
+      border-color:#215b49;
+    }
+    .today-task-card input[type="checkbox"]{
+      width:18px;
+      height:18px;
+      margin:0;
+    }
+    .today-task-main{
+      min-width:0;
+    }
+    .today-task-title{
+      font-size:.94rem;
+      line-height:1.35;
+      word-break:break-word;
+    }
+    .today-task-time{
+      font-size:.72rem;
+      color:var(--muted);
+      margin-top:4px;
+    }
+    .today-task-actions{
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .today-task-actions button{
+      padding:5px 8px;
+      font-size:.72rem;
+      border-radius:8px;
+    }
+
+    .history-card{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:6px;
+      background:#0e142b;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px 12px;
+    }
+    .history-title{
+      font-size:.9rem;
+      line-height:1.35;
+    }
+    .history-meta{
+      font-size:.72rem;
+      color:var(--muted);
+    }
   </style>
 </head>
 <body>
@@ -126,10 +208,10 @@
 
       <div class="panel">
         <div class="stat">
-          <div class="box"><div class="small">今天工作任務</div><div id="homeTodayCount" class="mono summary-number">0</div></div>
-          <div class="box"><div class="small">今天已完成</div><div id="homeDoneCount" class="mono summary-number">0</div></div>
-          <div class="box"><div class="small">今天 Focus</div><div id="homeFocusCount" class="mono summary-number">0</div></div>
-          <div class="box"><div class="small">最近 24 小時紀錄</div><div id="home24Count" class="mono summary-number">0</div></div>
+          <div class="box"><div class="small">今天工作任務</div><div id="homeTodayCount" class="mono">0</div></div>
+          <div class="box"><div class="small">今天已完成</div><div id="homeDoneCount" class="mono">0</div></div>
+          <div class="box"><div class="small">今天 Focus</div><div id="homeFocusCount" class="mono">0</div></div>
+          <div class="box"><div class="small">最近 24 小時紀錄</div><div id="home24Count" class="mono">0</div></div>
         </div>
       </div>
 
@@ -208,60 +290,39 @@
     </section>
 
     <section id="pageToday" class="page">
+      <div class="panel today-top">
+        <div class="btn-row">
+          <button onclick="goHome()">← Home</button>
+          <button class="btn" onclick="refreshTodayPage()">重新整理</button>
+          <button class="btn-ghost" onclick="copyTodayWorkText()">複製工作文字</button>
+          <button class="btn" onclick="sendTodayToShortcut()">SaveToWork → Note</button>
+          <button class="btn-danger" onclick="clear24hHistory()">清除最近 24 小時紀錄</button>
+        </div>
+        <h2>Today Work ToDoList</h2>
+        <div class="small">今天工作任務已改為簡潔顯示，方便快速閱讀與整理。</div>
+      </div>
+
       <div class="panel">
-        <div class="page-header-compact">
-          <div>
-            <h2>Today Work ToDoList</h2>
-            <div class="small">先看任務名稱，再決定 Focus / Planned / Done。</div>
-          </div>
-          <div class="toolbar summary-toolbar">
-            <button onclick="goHome()">← Home</button>
-            <button class="btn" onclick="refreshTodayPage()">重新整理</button>
-          </div>
+        <div class="stat today-stat">
+          <div class="box"><div class="small">Planned / Done</div><div id="todayStats1" class="mono">0 / 0</div></div>
+          <div class="box"><div class="small">今天總數</div><div id="todayStats2" class="mono">0</div></div>
+          <div class="box"><div class="small">最近 24 小時</div><div id="todayStats3" class="mono">0</div></div>
         </div>
       </div>
 
       <div class="panel">
-        <div class="summary-strip">
-          <div class="summary-mini"><div class="label">Planned</div><div id="todaySummaryPlanned" class="value mono">0</div></div>
-          <div class="summary-mini"><div class="label">Done</div><div id="todaySummaryDone" class="value mono">0</div></div>
-          <div class="summary-mini"><div class="label">Focus</div><div id="todaySummaryFocus" class="value mono">0</div></div>
-          <div class="summary-mini"><div class="label">今天總數</div><div id="todaySummaryTotal" class="value mono">0</div></div>
-          <div class="summary-mini"><div class="label">最近 24 小時</div><div id="todaySummaryHistory" class="value mono">0</div></div>
-        </div>
+        <h3 class="today-section-title">Today Work Tasks</h3>
+        <div id="todayList" class="cards"></div>
       </div>
 
-      <div class="today-main-layout">
-        <div>
-          <div class="panel">
-            <div class="page-header-compact">
-              <h3>Today Work Tasks</h3>
-              <div class="toolbar">
-                <button class="btn-ghost" onclick="copyTodayWorkText()">複製工作文字</button>
-                <button class="btn" onclick="sendTodayToShortcut()">SaveToWork → Note</button>
-              </div>
-            </div>
-            <div id="todayList" class="cards"></div>
-          </div>
-        </div>
+      <div class="panel">
+        <h3 class="today-section-title">Preview for SaveToWork</h3>
+        <div id="todayExportPreview" class="mono" style="white-space:pre-wrap"></div>
+      </div>
 
-        <div>
-          <div class="panel">
-            <div class="page-header-compact">
-              <h3>Preview</h3>
-              <div class="small">送到 SaveToWork 的文字</div>
-            </div>
-            <div id="todayExportPreview" class="mono preview-box" style="white-space:pre-wrap"></div>
-          </div>
-
-          <div class="panel">
-            <div class="page-header-compact">
-              <h3>最近 24 小時紀錄</h3>
-              <button class="btn-danger" onclick="clear24hHistory()">清除紀錄</button>
-            </div>
-            <div id="history24List" class="cards"></div>
-          </div>
-        </div>
+      <div class="panel">
+        <h3 class="today-section-title">最近 24 小時紀錄</h3>
+        <div id="history24List" class="cards"></div>
       </div>
     </section>
 
@@ -403,6 +464,7 @@
           <div class="todo-title">${buildTaskDisplay(item)}</div>
           <div class="todo-meta">點選後會加入今天工作任務池</div>
         </div>
+        <div class="small">${escapeHtml(item.priority || 'P2')}</div>
       `;
       label.dataset.payload = JSON.stringify(item);
       label.addEventListener('click', (e) => {
@@ -542,14 +604,6 @@
       return priority === 'P1' ? 1 : priority === 'P2' ? 2 : 3;
     }
 
-    function getCompactMeta(item){
-      const parts = [];
-      if(item.priority) parts.push(item.priority);
-      if(item.category) parts.push(item.category);
-      if(item.minutes != null) parts.push(`${item.minutes}m`);
-      return parts;
-    }
-
     function renderTodayCards(list, elId, allowActions){
       const host = document.getElementById(elId);
       host.innerHTML = '';
@@ -561,50 +615,47 @@
       list
         .slice()
         .sort((a,b) => {
-          if(allowActions && (a.focused !== b.focused)) return Number(b.focused) - Number(a.focused);
           if((a.status === 'done') !== (b.status === 'done')) return a.status === 'done' ? 1 : -1;
           if(priorityWeight(a.priority) !== priorityWeight(b.priority)) return priorityWeight(a.priority) - priorityWeight(b.priority);
           return (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0);
         })
         .forEach(item => {
-          const meta = getCompactMeta(item);
-          const div = document.createElement('div');
-          div.className = `todo-card ${item.status==='done'?'done':''} ${item.focused ? 'focused' : ''}`;
-          div.innerHTML = `
-            <input type="checkbox" ${item.status==='done' ? 'checked' : ''} ${allowActions ? '' : 'disabled'} />
-            <div class="todo-main">
-              <div class="todo-head">
-                <div class="todo-title-row">
-                  <div class="todo-title">${escapeHtml(item.displayText || item.text)}</div>
-                  ${item.focused ? '<span class="tag-info">Focus</span>' : ''}
-                  ${item.status==='done' ? '<span class="tag-ok">Done</span>' : '<span class="tag-warn">Planned</span>'}
-                </div>
-              </div>
-              <div class="todo-meta">
-                ${meta.map(x => `<span class="pill">${escapeHtml(x)}</span>`).join('')}
-              </div>
-              <div class="todo-meta-quiet">${escapeHtml(fmtDateTime(item.updatedAt || item.createdAt))}${item.source ? ` ・ ${escapeHtml(item.source)}` : ''}</div>
-              ${allowActions ? `
-                <div class="todo-actions">
-                  <button class="action-btn" onclick="toggleFocus('${item.id}')">${item.focused ? 'Unfocus' : 'Focus'}</button>
-                  <button class="action-btn" onclick="markTodoStatus('${item.id}','planned')">Planned</button>
-                  <button class="action-btn btn-ok" onclick="markTodoStatus('${item.id}','done')">Done</button>
-                  <button class="action-btn btn-danger" onclick="deleteTodayTodo('${item.id}')">Delete</button>
-                </div>
-              ` : ''}
-            </div>
-          `;
-          const cb = div.querySelector('input[type="checkbox"]');
           if(allowActions){
+            const div = document.createElement('div');
+            div.className = `today-task-card ${item.status==='done'?'done':''}`;
+            div.innerHTML = `
+              <input type="checkbox" ${item.status==='done' ? 'checked' : ''} />
+              <div class="today-task-main">
+                <div class="today-task-title">${escapeHtml(item.displayText || item.text)}</div>
+                <div class="today-task-time">
+                  ${item.status==='done' ? 'Done' : 'Planned'} ・ ${escapeHtml(fmtDateTime(item.updatedAt || item.createdAt))}
+                </div>
+              </div>
+              <div class="today-task-actions">
+                <button onclick="markTodoStatus('${item.id}','planned')">Planned</button>
+                <button class="btn-ok" onclick="markTodoStatus('${item.id}','done')">Done</button>
+                <button class="btn-danger" onclick="deleteTodayTodo('${item.id}')">Delete</button>
+              </div>
+            `;
+            const cb = div.querySelector('input[type="checkbox"]');
             cb.addEventListener('change', () => markTodoStatus(item.id, cb.checked ? 'done' : 'planned'));
+            host.appendChild(div);
+          } else {
+            const div = document.createElement('div');
+            div.className = 'history-card';
+            div.innerHTML = `
+              <div class="history-title">${escapeHtml(item.displayText || item.text)}</div>
+              <div class="history-meta">
+                ${item.status === 'done' ? 'Done' : 'Planned'} ・ ${escapeHtml(fmtDateTime(item.updatedAt || item.createdAt))}
+              </div>
+            `;
+            host.appendChild(div);
           }
-          host.appendChild(div);
         });
     }
 
     function buildTodayExportText(){
       const todos = getTodayTodos().slice().sort((a,b) => {
-        if((a.focused !== b.focused)) return Number(b.focused) - Number(a.focused);
         if((a.status === 'done') !== (b.status === 'done')) return a.status === 'done' ? 1 : -1;
         if(priorityWeight(a.priority) !== priorityWeight(b.priority)) return priorityWeight(a.priority) - priorityWeight(b.priority);
         return (a.createdAt || 0) - (b.createdAt || 0);
@@ -615,19 +666,10 @@
       lines.push(`Updated: ${fmtDateTime()}`);
       lines.push('');
 
-      const focus = todos.filter(x => x.focused && x.status !== 'done');
-      if(focus.length){
-        lines.push('[Focus]');
-        focus.forEach((t,i) => {
-          lines.push(`${i+1}. ${t.text} | ${t.priority || 'P2'} | ${t.category || 'Others'}${t.minutes != null ? ` | ${t.minutes}m` : ''}`);
-        });
-        lines.push('');
-      }
-
       const planned = todos.filter(x => x.status !== 'done');
       lines.push('[Planned]');
       if(planned.length){
-        planned.forEach((t,i) => lines.push(`${i+1}. ${t.text} | ${t.priority || 'P2'} | ${t.category || 'Others'}${t.minutes != null ? ` | ${t.minutes}m` : ''}`));
+        planned.forEach((t,i) => lines.push(`${i+1}. ${t.text}`));
       } else {
         lines.push('None');
       }
@@ -636,7 +678,7 @@
       const done = todos.filter(x => x.status === 'done');
       lines.push('[Done]');
       if(done.length){
-        done.forEach((t,i) => lines.push(`${i+1}. ${t.text} | ${t.priority || 'P2'} | ${t.category || 'Others'}${t.minutes != null ? ` | ${t.minutes}m` : ''}`));
+        done.forEach((t,i) => lines.push(`${i+1}. ${t.text}`));
       } else {
         lines.push('None');
       }
@@ -649,13 +691,10 @@
       const hist = pruneHistory24();
       const planned = todos.filter(x => x.status === 'planned').length;
       const done = todos.filter(x => x.status === 'done').length;
-      const focus = todos.filter(x => x.focused).length;
 
-      document.getElementById('todaySummaryPlanned').textContent = planned;
-      document.getElementById('todaySummaryDone').textContent = done;
-      document.getElementById('todaySummaryFocus').textContent = focus;
-      document.getElementById('todaySummaryTotal').textContent = todos.length;
-      document.getElementById('todaySummaryHistory').textContent = hist.length;
+      document.getElementById('todayStats1').textContent = `${planned} / ${done}`;
+      document.getElementById('todayStats2').textContent = todos.length;
+      document.getElementById('todayStats3').textContent = hist.length;
 
       renderTodayCards(todos, 'todayList', true);
       renderTodayCards(hist, 'history24List', false);
