@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+[]<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8" />
@@ -400,7 +400,7 @@
     function uid(){ return 'id_' + Math.random().toString(36).slice(2,10); }
     function getTodayStrLocal(){
       const d = new Date();
-      return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+      return ${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())};
     }
     function todayStr(){ return getTodayStrLocal(); }
     function escapeHtml(s){ return (s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -410,13 +410,13 @@
       const m = pad2(d.getMinutes());
       const ampm = h >= 12 ? 'pm' : 'am';
       h = h % 12 || 12;
-      return `${h}:${m}${ampm}`;
+      return ${h}:${m}${ampm};
     }
     function fmtDate(ts){
       const d = new Date(ts || Date.now());
-      return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+      return ${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())};
     }
-    function fmtDateTime(ts){ return `${fmtDate(ts)} ${fmtTime(ts)}`; }
+    function fmtDateTime(ts){ return ${fmtDate(ts)} ${fmtTime(ts)}; }
 
     function saveLS(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
     function loadLS(key, fallback){
@@ -500,10 +500,10 @@
     }
 
     function buildTaskDisplay(item){
-      const durTag = item.minutes ? `<span class="pill">${item.minutes}m</span>` : '';
-      const catTag = item.category ? `<span class="pill">${escapeHtml(item.category)}</span>` : '';
-      const priTag = item.priority ? `<span class="pill">${escapeHtml(item.priority)}</span>` : '';
-      return `${escapeHtml(item.text)} ${priTag}${catTag}${durTag}`;
+      const durTag = item.minutes ? <span class="pill">${item.minutes}m</span> : '';
+      const catTag = item.category ? <span class="pill">${escapeHtml(item.category)}</span> : '';
+      const priTag = item.priority ? <span class="pill">${escapeHtml(item.priority)}</span> : '';
+      return ${escapeHtml(item.text)} ${priTag}${catTag}${durTag};
     }
 
     function addPlanTodoCard(item){
@@ -511,14 +511,14 @@
       const id = uid();
       const label = document.createElement('label');
       label.className = 'todo-card';
-      label.innerHTML = `
+      label.innerHTML = 
         <input type="checkbox" id="${id}" />
         <div>
           <div class="todo-title">${buildTaskDisplay(item)}</div>
           <div class="todo-meta">點選後會加入今天工作任務池</div>
         </div>
         <div class="small">${escapeHtml(item.priority || 'P2')}</div>
-      `;
+      ;
       label.dataset.payload = JSON.stringify(item);
       label.addEventListener('click', (e) => {
         const cb = label.querySelector('input');
@@ -539,6 +539,1075 @@
       }
       addPlanTodoCard(payload);
       clearPlanInput();
+    }
+
+    function saveInputDirectToTodayPlanned(){
+      const payload = getInputTaskPayload();
+      if(!payload){
+        alert('請先輸入工作項目');
+        return;
+      }
+
+      moveOldTodayTodosToHistory();
+      const todos = getTodayTodos();
+      const createdAt = now();
+
+      todos.push({
+        id: uid(),
+        text: payload.text,
+        displayText: payload.text,
+        category: payload.category || 'Others',
+        priority: payload.priority || 'P2',
+        minutes: payload.minutes == null ? null : Number(payload.minutes),
+        date: todayStr(),
+        status: 'planned',
+        focused: false,
+        createdAt,
+        updatedAt: createdAt,
+        source: 'work-plan-direct'
+      });
+
+      setTodayTodos(todos);
+      clearPlanInput();
+      updateHomeStats();
+      alert('已直接儲存為 Planned → Today Work ToDoList');
+      showPage('pageToday');
+    }
+
+    function selectAllPlanTodos(){
+      document.querySelectorAll('#planTodoCards .todo-card input[type="checkbox"]').forEach(cb => {
+        cb.checked = true;
+        cb.closest('.todo-card').classList.add('selected');
+      });
+    }
+
+    function clearAllPlanTodos(){
+      document.querySelectorAll('#planTodoCards .todo-card input[type="checkbox"]').forEach(cb => {
+        cb.checked = false;
+        cb.closest('.todo-card').classList.remove('selected');
+      });
+    }
+
+    function savePlanToToday(state){
+      const picked = Array.from(document.querySelectorAll('#planTodoCards .todo-card'))
+        .filter(card => card.querySelector('input').checked)
+        .map(card => JSON.parse(card.dataset.payload || '{}'));
+
+      if(!picked.length){
+        alert('請至少選擇一項工作任務 Card');
+        return;
+      }
+
+      moveOldTodayTodosToHistory();
+      const todos = getTodayTodos();
+      const createdAt = now();
+
+      picked.forEach(item => {
+        todos.push({
+          id: uid(),
+          text: item.text,
+          displayText: item.text,
+          category: item.category || 'Others',
+          priority: item.priority || 'P2',
+          minutes: item.minutes == null ? null : Number(item.minutes),
+          date: todayStr(),
+          status: state,
+          focused: false,
+          createdAt,
+          updatedAt: createdAt,
+          source: 'work-plan-card'
+        });
+      });
+
+      setTodayTodos(todos);
+      updateHomeStats();
+      alert(已加入 Today Work ToDoList：${picked.length} 項);
+      showPage('pageToday');
+    }
+
+    function markTodoStatus(id, status){
+      const todos = getTodayTodos().map(item => item.id === id ? {...item, status, updatedAt: now()} : item);
+      setTodayTodos(todos);
+      refreshTodayPage();
+      updateHomeStats();
+    }
+
+    function toggleFocus(id){
+      const todos = getTodayTodos().map(item => item.id === id ? {...item, focused: !item.focused, updatedAt: now()} : item);
+      setTodayTodos(todos);
+      refreshTodayPage();
+      updateHomeStats();
+    }
+
+    function deleteTodayTodo(id){
+      const todos = getTodayTodos();
+      const found = todos.find(x => x.id === id);
+      const remain = todos.filter(x => x.id !== id);
+      setTodayTodos(remain);
+      if(found){
+        const hist = pruneHistory24();
+        hist.unshift({...found, archivedAt: now(), archivedReason: 'manual-delete'});
+        setHistory24(hist);
+      }
+      refreshTodayPage();
+      updateHomeStats();
+    }
+
+    function priorityWeight(priority){
+      return priority === 'P1' ? 1 : priority === 'P2' ? 2 : 3;
+    }
+
+    function getPriorityClass(priority){
+      const p = String(priority || '').toUpperCase();
+      return p === 'P1' ? 'priority-p1' : p === 'P2' ? 'priority-p2' : 'priority-p3';
+    }
+
+    function renderTodayCards(list, elId, allowActions){
+      const host = document.getElementById(elId);
+      host.innerHTML = '';
+      if(!list.length){
+        host.innerHTML = '<div class="empty">沒有資料</div>';
+        return;
+      }
+
+      list
+        .slice()
+        .sort((a,b) => {
+          if((a.status === 'done') !== (b.status === 'done')) return a.status === 'done' ? 1 : -1;
+          if(priorityWeight(a.priority) !== priorityWeight(b.priority)) return priorityWeight(a.priority) - priorityWeight(b.priority);
+          return (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0);
+        })
+        .forEach(item => {
+          if(allowActions){
+            const div = document.createElement('div');
+            div.className = today-task-card ${item.status==='done'?'done':''};
+            div.innerHTML = 
+              <div class="today-task-left">
+                <input class="today-task-check" type="checkbox" ${item.status==='done' ? 'checked' : ''} />
+                <div class="today-task-main">
+                  <div class="today-task-title-row">
+                    <div class="today-task-title" title="${escapeHtml(item.displayText || item.text)}">${escapeHtml(item.displayText || item.text)}</div>
+                  </div>
+                  <div class="today-task-time">
+                    ${item.status==='done' ? 'Done' : 'Planned'} ・ ${escapeHtml(fmtDateTime(item.updatedAt || item.createdAt))}
+                  </div>
+                </div>
+              </div>
+              <div class="today-task-actions">
+                <button onclick="markTodoStatus('${item.id}','planned')">Planned</button>
+                <button class="btn-ok" onclick="markTodoStatus('${item.id}','done')">Done</button>
+                <button class="btn-danger" onclick="deleteTodayTodo('${item.id}')">Delete</button>
+              </div>
+            ;
+            const cb = div.querySelector('input[type="checkbox"]');
+            cb.addEventListener('change', () => markTodoStatus(item.id, cb.checked ? 'done' : 'planned'));
+            host.appendChild(div);
+          } else {
+            const div = document.createElement('div');
+            div.className = 'history-card';
+            div.innerHTML = 
+              <div class="history-title">${escapeHtml(item.displayText || item.text)}</div>
+              <div class="history-meta">
+                ${item.status === 'done' ? 'Done' : 'Planned'} ・ ${escapeHtml(fmtDateTime(item.updatedAt || item.createdAt))}
+              </div>
+            ;
+            host.appendChild(div);
+          }
+        });
+    }
+
+    function buildTodayExportText(){
+      const todos = getTodayTodos().slice().sort((a,b) => {
+        if((a.status === 'done') !== (b.status === 'done')) return a.status === 'done' ? 1 : -1;
+        if(priorityWeight(a.priority) !== priorityWeight(b.priority)) return priorityWeight(a.priority) - priorityWeight(b.priority);
+        return (a.createdAt || 0) - (b.createdAt || 0);
+      });
+
+      const lines = [];
+      lines.push(Work ToDoList — ${todayStr()});
+      lines.push(Updated: ${fmtDateTime()});
+      lines.push('');
+
+      const planned = todos.filter(x => x.status !== 'done');
+      lines.push('[Planned]');
+      if(planned.length){
+        planned.forEach((t,i) => lines.push(${i+1}. ${t.text}));
+      } else {
+        lines.push('None');
+      }
+      lines.push('');
+
+      const done = todos.filter(x => x.status === 'done');
+      lines.push('[Done]');
+      if(done.length){
+        done.forEach((t,i) => lines.push(${i+1}. ${t.text}));
+      } else {
+        lines.push('None');
+      }
+      return lines.join('\n');
+    }
+
+    function refreshTodayPage(){
+      moveOldTodayTodosToHistory();
+      const todos = getTodayTodos();
+      const hist = pruneHistory24();
+      const planned = todos.filter(x => x.status === 'planned').length;
+      const done = todos.filter(x => x.status === 'done').length;
+
+      document.getElementById('todayStats1').textContent = ${planned} / ${done};
+      document.getElementById('todayStats2').textContent = todos.length;
+      document.getElementById('todayStats3').textContent = hist.length;
+
+      renderTodayCards(todos, 'todayList', true);
+      renderTodayCards(hist, 'history24List', false);
+      document.getElementById('todayExportPreview').textContent = buildTodayExportText();
+    }
+
+    async function copyTodayWorkText(){
+      const text = buildTodayExportText();
+      try {
+        await navigator.clipboard.writeText(text);
+        alert('已複製工作文字');
+      } catch {
+        alert('複製失敗，請手動複製。');
+      }
+    }
+
+    function sendTodayToShortcut(){
+      const text = buildTodayExportText();
+      const shortcutName = 'SaveToWork';
+      const url = shortcuts://run-shortcut?name=${encodeURIComponent(shortcutName)}&input=text&text=${encodeURIComponent(text)};
+      window.location.href = url;
+    }
+
+    function clear24hHistory(){
+      if(!confirm('清除最近 24 小時紀錄？')) return;
+      setHistory24([]);
+      refreshTodayPage();
+      updateHomeStats();
+    }
+
+    function runDevTests(){
+      const out = [];
+      const ok = (name, cond) => out.push(${cond ? '✅ PASS' : '❌ FAIL'}  ${name});
+      const demo = [
+        {text:'Task A', priority:'P1', category:'Email', status:'planned', focused:true, createdAt:1},
+        {text:'Task B', priority:'P2', category:'Admin', status:'done', focused:false, createdAt:2}
+      ];
+
+      ok('todayStr() returns YYYY-MM-DD', /^\d{4}-\d{2}-\d{2}$/.test(todayStr()));
+      ok('priorityWeight(P1) === 1', priorityWeight('P1') === 1);
+      ok('priorityWeight(P3) === 3', priorityWeight('P3') === 3);
+      ok('DEFAULT_WORK_TEMPLATES is empty', Array.isArray(DEFAULT_WORK_TEMPLATES) && DEFAULT_WORK_TEMPLATES.length === 0);
+      ok('getPriorityClass(P2) works', getPriorityClass('P2') === 'priority-p2');
+      ok('buildTodayExportText is string after temp save', (() => {
+        const backup = getTodayTodos();
+        setTodayTodos(demo.map((x,i)=>({...x,id:'t'+i,date:todayStr(),updatedAt:3,source:'test',minutes:30,displayText:x.text})));
+        const s = buildTodayExportText();
+        setTodayTodos(backup);
+        return typeof s === 'string' && s.includes('[Planned]') && s.includes('[Done]');
+      })());
+
+      document.getElementById('tests').textContent = out.join('\n');
+    }
+
+    (function init(){
+      document.getElementById('todayStr').textContent = todayStr();
+      moveOldTodayTodosToHistory();
+      updateHomeStats();
+      loadDefaultWorkTemplates();
+      runDevTests();
+    })();
+  </script>
+</body>
+</html>]
+
+update the work plan , 新增任務card , 新增後，為永久儲存。 可以在下次使用選擇
+
+explore all html code
+我先檢查整個 HTML 結構，然後直接把「新增任務 Card 可永久儲存、下次可再選」加進 Work Plan，並產出可下載版本。
+已把核心功能加上去：現在「新增永久任務 Card」會存進 localStorage，下次再打開同一個 HTML 仍會出現，亦加了刪除與清空永久卡片功能。
+Thought for 3m 54s
+我已更新好版本。
+下載：
+work_todolist_planner_updated.html
+
+這次改動重點：
+
+新增預設任務 Card 改為 新增永久任務 Card
+新增的 Card 會永久存到 localStorage
+下次再打開同一個 HTML，同一個瀏覽器/裝置下仍可再選
+新增永久 Card 的數量顯示
+每張永久 Card 可單獨 Delete
+可一鍵 清空永久任務 Card
+Home 頁也加了 永久任務 Card 統計
+你原本程式我已整體看過，這次主要是在 Work Plan flow 加入一個新 storage：
+workPlanner_permanentTemplates_v1
+實作邏輯是：
+輸入 task → 按 新增永久任務 Card
+先做去重檢查
+通過後存入 localStorage
+重新 render planTodoCards
+下次載入頁面時，自動把永久 Card 讀回來
+注意一點：
+這個「永久」是指 同一部裝置 + 同一個瀏覽器的 localStorage。
+如果你換瀏覽器、清除網站資料，或換另一部手機，這些永久 Card 不會自動同步過去。
+如果你要，我下一步可以幫你再升級成：
+
+匯出 / 匯入 JSON，方便備份永久任務卡
+或
+加 Edit 功能，讓永久 Card 可直接修改。
+
+
+2
+我而家加 Edit 功能：每張永久任務 Card 可以直接修改 task、category、priority、minutes，存檔後會即時更新並保留到下次。
+我已找到最合適做法：不是另開 popup，而是直接重用上面輸入區做「編輯模式」，這樣最穩定，也最容易長期維護。
+Thought for 2m 28s
+已加好 Edit 版本。
+下載：
+work_todolist_planner_updated_v2_edit.html
+
+你現在可以：
+
+在每張永久任務 Card 按 Edit
+上方輸入區會進入「編輯模式」
+修改 工作項目 / Category / Priority / Minutes
+按 更新永久任務 Card
+內容會永久儲存，下次打開仍保留
+另外也加了：
+取消編輯
+編輯模式提示：模式：編輯永久任務 Card
+防止更新後和其他 Card 重複
+即是現在永久任務 Card 已支援完整基本管理：
+新增
+選擇
+編輯
+刪除
+清空全部
+下一步最有價值的升級，會是幫你加 拖動排序 / 置頂常用 Card。
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Work ToDoList Planner</title>
+  <style>
+    :root{
+      --bg:#0b1020; --bg2:#111936; --panel:#141a33; --ink:#e9eefc; --muted:#a8b6f5;
+      --accent:#7aa2ff; --ok:#2ad1a0; --warn:#ffb02e; --danger:#ff5a78; --line:#263565;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:linear-gradient(180deg,var(--bg),var(--bg2));
+      color:var(--ink);
+      font-family:ui-sans-serif,system-ui,"PingFang TC","Noto Sans TC",Segoe UI,Roboto,Helvetica,Arial;
+    }
+    .wrap{max-width:1160px;margin:0 auto;padding:20px}
+    h1,h2,h3{margin:0 0 12px}
+    .sub{color:var(--muted);font-size:.95rem;line-height:1.45}
+    .page{display:none}
+    .page.active{display:block}
+    .panel{
+      background:var(--panel);
+      border:1px solid #223061;
+      border-radius:16px;
+      padding:16px;
+      margin:12px 0;
+      box-shadow:0 8px 24px rgba(0,0,0,.15);
+    }
+    .grid{display:grid;gap:12px}
+    .grid-2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+    .grid-3{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+    .hero-btn, button{
+      padding:12px 14px;border-radius:12px;border:1px solid #2a3767;background:#0e142b;color:var(--ink);
+      cursor:pointer;font-size:1rem
+    }
+    .hero-btn{min-height:98px;text-align:left}
+    .hero-btn strong{display:block;font-size:1.05rem;margin-bottom:6px}
+    .btn{background:var(--accent);border:none;font-weight:700;color:#071326}
+    .btn-ok{background:var(--ok);border:none;color:#07271d;font-weight:700}
+    .btn-danger{background:var(--danger);border:none;font-weight:700}
+    .btn-warn{background:var(--warn);border:none;font-weight:700;color:#2a1a00}
+    .btn-ghost{background:#0e142b;border:1px solid #2a3767}
+    .btn-row,.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+    .row > *{flex:1 1 220px}
+    label{display:block;margin:8px 0 6px;color:var(--muted);font-size:.95rem}
+    input,textarea,select{
+      width:100%;padding:12px;border-radius:10px;border:1px solid #2a3767;background:#0e142b;color:var(--ink);font-size:1rem
+    }
+    textarea{min-height:110px;resize:vertical}
+    .small{font-size:.85rem;color:var(--muted)}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
+    .pill{display:inline-block;padding:4px 10px;border-radius:999px;border:1px solid #2a3767;background:#0e142b;margin:2px 6px 2px 0;font-size:.82rem}
+    .tag-ok,.tag-warn,.tag-danger,.tag-info{
+      display:inline-block;padding:2px 8px;border-radius:999px;font-size:.8rem;border:1px solid transparent
+    }
+    .tag-ok{border-color:#164932;background:#0f2b1e;color:#7dffca}
+    .tag-warn{border-color:#57401a;background:#2b1e0e;color:#ffd37a}
+    .tag-danger{border-color:#5c1c2c;background:#2d1018;color:#ff9aad}
+    .tag-info{border-color:#21457a;background:#0f1e36;color:#93c1ff}
+    .cards{display:grid;grid-template-columns:1fr;gap:12px}
+    @media (min-width:760px){ .cards.two{grid-template-columns:1fr 1fr} }
+
+    .todo-card{
+      display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;
+      background:#0e142b;border:1px solid var(--line);border-radius:14px;padding:14px;
+    }
+    .todo-card.done{opacity:.78;border-color:#215b49}
+    .todo-card.focused{border-color:#547dff;box-shadow:0 0 0 2px rgba(122,162,255,.2) inset}
+    .todo-card.selected{outline:2px solid var(--accent)}
+    .todo-title{font-size:1rem;line-height:1.35}
+    .todo-meta{font-size:.8rem;color:var(--muted);margin-top:4px;line-height:1.5}
+
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .stat{display:flex;gap:12px;flex-wrap:wrap}
+    .stat .box{flex:1 1 180px;background:#0e142b;border:1px solid var(--line);border-radius:12px;padding:12px}
+    .chips{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{padding:8px 12px;border:1px solid #2a3767;border-radius:999px;background:#0e142b;cursor:pointer;user-select:none}
+    .chip.selected{outline:2px solid var(--accent)}
+    .right{text-align:right}
+    .empty{padding:18px;text-align:center;color:var(--muted)}
+    .sep{height:1px;background:#223061;margin:10px 0}
+    .sticky-footer{position:sticky;bottom:0;background:linear-gradient(180deg,#101736,#0b1020);padding:12px;border-top:1px solid #223061;margin-top:18px}
+    .muted-block{padding:10px 12px;background:#0e142b;border:1px dashed #2a3767;border-radius:12px;color:var(--muted)}
+    .quick-grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+
+    .today-top .btn-row button{
+      padding:6px 10px;
+      font-size:.78rem;
+      border-radius:10px;
+    }
+    .today-top h2{
+      font-size:1.1rem;
+      margin-top:8px;
+      margin-bottom:6px;
+    }
+    .today-top .small{
+      font-size:.78rem;
+    }
+
+    .today-stat{
+      gap:8px;
+    }
+    .today-stat .box{
+      flex:1 1 140px;
+      padding:8px 10px;
+      border-radius:10px;
+    }
+    .today-stat .small{
+      font-size:.66rem;
+      line-height:1.2;
+      margin-bottom:4px;
+    }
+    .today-stat .mono{
+      font-size:.72rem;
+      line-height:1.1;
+    }
+
+    .today-section-title{
+      font-size:1rem;
+      margin-bottom:10px;
+    }
+
+    .today-task-card{
+      display:grid;
+      grid-template-columns: minmax(0,1fr) auto;
+      gap:8px;
+      align-items:center;
+      background:#0e142b;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:8px 10px;
+    }
+    .today-task-card.done{
+      opacity:.82;
+      border-color:#215b49;
+    }
+    .today-task-left{
+      display:flex;
+      align-items:flex-start;
+      gap:8px;
+      min-width:0;
+    }
+    .today-task-check{
+      width:16px !important;
+      min-width:16px;
+      height:16px;
+      margin-top:2px;
+      flex:0 0 auto;
+    }
+    .today-task-main{
+      min-width:0;
+    }
+    .today-task-title-row{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      min-width:0;
+      flex-wrap:nowrap;
+    }
+    .today-task-title{
+      font-size:.88rem;
+      line-height:1.3;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      min-width:0;
+      flex:1 1 auto;
+    }
+    .today-task-time{
+      font-size:.68rem;
+      color:var(--muted);
+      margin-top:3px;
+      line-height:1.2;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .today-task-actions{
+      display:flex;
+      align-items:center;
+      gap:4px;
+      flex:0 0 auto;
+      white-space:nowrap;
+    }
+    .today-task-actions button{
+      width:auto;
+      min-width:0;
+      padding:3px 7px;
+      font-size:.62rem;
+      line-height:1.1;
+      border-radius:7px;
+    }
+
+    .history-card{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:6px;
+      background:#0e142b;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px 12px;
+    }
+    .history-title{
+      font-size:.9rem;
+      line-height:1.35;
+    }
+    .history-meta{
+      font-size:.72rem;
+      color:var(--muted);
+    }
+
+    .template-card-actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-end;
+    }
+    .template-count{
+      margin-top:8px;
+    }
+
+    @media (max-width:760px){
+      .today-task-card{
+        grid-template-columns:1fr;
+        align-items:start;
+      }
+      .today-task-actions{
+        width:100%;
+        justify-content:flex-end;
+        padding-left:24px;
+      }
+      .template-card-actions{
+        justify-content:flex-start;
+      }
+    }
+
+    @media (max-width:520px){
+      .today-task-title{
+        white-space:normal;
+        overflow:visible;
+        text-overflow:clip;
+      }
+      .today-task-title-row{
+        align-items:flex-start;
+      }
+      .today-task-actions{
+        justify-content:flex-start;
+        padding-left:24px;
+        flex-wrap:wrap;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Work ToDoList Planner</h1>
+
+    <section id="pageHome" class="page active">
+      <div class="panel">
+        <h2>首頁</h2>
+        <div class="grid grid-2">
+          <button class="hero-btn" onclick="showPage('pagePlan')">
+            <strong>Work Plan</strong>
+            建立今天工作任務。可選擇 priority、duration、category，儲存後自動進入 Today Work ToDoList。
+          </button>
+          <button class="hero-btn" onclick="showPage('pageToday')">
+            <strong>Today Work ToDoList</strong>
+            顯示今天工作任務、進度、最近 24 小時紀錄，並可一鍵送到 Shortcut SaveToWork。
+          </button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="stat">
+          <div class="box"><div class="small">今天工作任務</div><div id="homeTodayCount" class="mono">0</div></div>
+          <div class="box"><div class="small">今天已完成</div><div id="homeDoneCount" class="mono">0</div></div>
+          <div class="box"><div class="small">今天 Focus</div><div id="homeFocusCount" class="mono">0</div></div>
+          <div class="box"><div class="small">最近 24 小時紀錄</div><div id="home24Count" class="mono">0</div></div>
+          <div class="box"><div class="small">永久任務 Card</div><div id="homeTemplateCount" class="mono">0</div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Shortcut 設定提示</h3>
+        <div class="muted-block">
+          這個 HTML 會用 <span class="mono">shortcuts://run-shortcut?name=SaveToWork&amp;input=text&amp;text=...</span> 呼叫你的 iPhone Shortcut。<br>
+          在 Shortcut <span class="mono">SaveToWork</span> 內，建議流程是：<br>
+          <span class="mono">Receive Text → Append to Note / Create Note in Apple Notes</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="pagePlan" class="page">
+      <div class="panel">
+        <div class="btn-row">
+          <button onclick="goHome()">← Home</button>
+        </div>
+        <h2>Work Plan</h2>
+        <div class="small">建立今天工作任務。你新增的任務 Card 會永久儲存在瀏覽器 localStorage，下次打開仍可再選擇。</div>
+      </div>
+
+      <div class="panel">
+        <div class="small" id="planDateTime"></div>
+        <div class="toolbar">
+          <button onclick="selectAllPlanTodos()">全選</button>
+          <button onclick="clearAllPlanTodos()">清空</button>
+          <button class="btn-warn" onclick="resetPermanentTemplates()">清空永久任務 Card</button>
+        </div>
+
+        <div class="sep"></div>
+        <div class="quick-grid">
+          <div>
+            <label for="planNewTodo">工作項目</label>
+            <input id="planNewTodo" type="text" placeholder="如：Prepare A12 material / Reply manager email" />
+          </div>
+          <div>
+            <label for="planNewCategory">Category</label>
+            <select id="planNewCategory">
+              <option value="Admin">Admin</option>
+              <option value="Teaching">Teaching</option>
+              <option value="Email">Email</option>
+              <option value="Meeting">Meeting</option>
+              <option value="Review">Review</option>
+              <option value="Planning">Planning</option>
+              <option value="Deep Work">Deep Work</option>
+              <option value="Others">Others</option>
+            </select>
+          </div>
+          <div>
+            <label for="planNewPriority">Priority</label>
+            <select id="planNewPriority">
+              <option value="P1">P1</option>
+              <option value="P2" selected>P2</option>
+              <option value="P3">P3</option>
+            </select>
+          </div>
+          <div>
+            <label for="planNewMinutes">Minutes</label>
+            <input id="planNewMinutes" type="number" min="0" step="5" placeholder="如 30" />
+          </div>
+        </div>
+
+        <div class="btn-row" style="margin-top:12px">
+          <button class="btn" onclick="saveInputDirectToTodayPlanned()">儲存為 Planned → Today Work ToDoList</button>
+          <button id="planTemplateSaveBtn" class="btn-ok" onclick="upsertPlanTemplateFromInput()">新增永久任務 Card</button>
+          <button id="planTemplateCancelBtn" class="btn-ghost" onclick="cancelPlanTemplateEdit()" style="display:none">取消編輯</button>
+        </div>
+        <div id="planEditStatus" class="small template-count">模式：新增永久任務 Card</div>
+        <div class="small template-count">永久任務 Card 數量：<span id="planTemplateCount" class="mono">0</span></div>
+
+        <div id="planTodoCards" class="cards two" style="margin-top:12px"></div>
+
+        <div class="sep"></div>
+        <div class="btn-row">
+          <button class="btn" onclick="savePlanToToday('planned')">儲存勾選 Card 為 Planned → Today Work ToDoList</button>
+          <button class="btn-ok" onclick="savePlanToToday('done')">儲存勾選 Card 為 Done → Today Work ToDoList</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="pageToday" class="page">
+      <div class="panel today-top">
+        <div class="btn-row">
+          <button onclick="goHome()">← Home</button>
+          <button class="btn" onclick="refreshTodayPage()">重新整理</button>
+          <button class="btn-ghost" onclick="copyTodayWorkText()">複製工作文字</button>
+          <button class="btn" onclick="sendTodayToShortcut()">SaveToWork → Note</button>
+          <button class="btn-danger" onclick="clear24hHistory()">清除最近 24 小時紀錄</button>
+        </div>
+        <h2>Today Work ToDoList</h2>
+        <div class="small">Today Work Tasks 已移除每項任務的 P2 / Admin / Minutes 顯示，只保留任務名稱與操作按鈕。</div>
+      </div>
+
+      <div class="panel">
+        <div class="stat today-stat">
+          <div class="box"><div class="small">Planned / Done</div><div id="todayStats1" class="mono">0 / 0</div></div>
+          <div class="box"><div class="small">今天總數</div><div id="todayStats2" class="mono">0</div></div>
+          <div class="box"><div class="small">最近 24 小時</div><div id="todayStats3" class="mono">0</div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3 class="today-section-title">Today Work Tasks</h3>
+        <div id="todayList" class="cards"></div>
+      </div>
+
+      <div class="panel">
+        <h3 class="today-section-title">Preview for SaveToWork</h3>
+        <div id="todayExportPreview" class="mono" style="white-space:pre-wrap"></div>
+      </div>
+
+      <div class="panel">
+        <h3 class="today-section-title">最近 24 小時紀錄</h3>
+        <div id="history24List" class="cards"></div>
+      </div>
+    </section>
+
+    <div class="panel">
+      <h3>開發測試</h3>
+      <div id="tests" class="mono small">—</div>
+    </div>
+
+    <div class="sticky-footer small">今天日期：<span id="todayStr"></span></div>
+  </div>
+
+  <script>
+    const STORAGE_KEYS = {
+      todayTodos: 'workPlanner_todayTodos_v2',
+      history24: 'workPlanner_history24_v2',
+      permanentTemplates: 'workPlanner_permanentTemplates_v1'
+    };
+
+    const DEFAULT_WORK_TEMPLATES = [];
+    let editingTemplateId = null;
+
+    function pad2(n){ return String(n).padStart(2,'0'); }
+    function now(){ return Date.now(); }
+    function uid(){ return 'id_' + Math.random().toString(36).slice(2,10); }
+    function getTodayStrLocal(){
+      const d = new Date();
+      return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+    }
+    function todayStr(){ return getTodayStrLocal(); }
+    function escapeHtml(s){ return (s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function fmtTime(ts){
+      const d = new Date(ts || Date.now());
+      let h = d.getHours();
+      const m = pad2(d.getMinutes());
+      const ampm = h >= 12 ? 'pm' : 'am';
+      h = h % 12 || 12;
+      return `${h}:${m}${ampm}`;
+    }
+    function fmtDate(ts){
+      const d = new Date(ts || Date.now());
+      return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+    }
+    function fmtDateTime(ts){ return `${fmtDate(ts)} ${fmtTime(ts)}`; }
+
+    function saveLS(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
+    function loadLS(key, fallback){
+      try {
+        const v = JSON.parse(localStorage.getItem(key));
+        return Array.isArray(fallback) ? (Array.isArray(v) ? v : fallback) : (v ?? fallback);
+      } catch { return fallback; }
+    }
+
+    function getTodayTodos(){ return loadLS(STORAGE_KEYS.todayTodos, []); }
+    function setTodayTodos(arr){ saveLS(STORAGE_KEYS.todayTodos, arr); }
+    function getHistory24(){ return loadLS(STORAGE_KEYS.history24, []); }
+    function setHistory24(arr){ saveLS(STORAGE_KEYS.history24, arr); }
+    function getPermanentTemplates(){ return loadLS(STORAGE_KEYS.permanentTemplates, []); }
+    function setPermanentTemplates(arr){ saveLS(STORAGE_KEYS.permanentTemplates, arr); }
+
+    function normalizeTemplate(item){
+      return {
+        id: item.id || uid(),
+        text: (item.text || '').trim(),
+        category: item.category || 'Others',
+        priority: item.priority || 'P2',
+        minutes: item.minutes == null || item.minutes === '' ? null : Math.max(0, Math.round(Number(item.minutes) || 0)),
+        createdAt: item.createdAt || now(),
+        updatedAt: now()
+      };
+    }
+
+    function getAllTemplateCards(){
+      const merged = [...DEFAULT_WORK_TEMPLATES, ...getPermanentTemplates()]
+        .map(normalizeTemplate)
+        .filter(item => item.text);
+
+      const seen = new Set();
+      return merged.filter(item => {
+        const key = `${item.text.toLowerCase()}__${item.category}__${item.priority}__${item.minutes ?? ''}`;
+        if(seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+
+    function templateMatchKey(item){
+      return `${(item.text || '').trim().toLowerCase()}__${item.category || 'Others'}__${item.priority || 'P2'}__${item.minutes == null ? '' : Number(item.minutes)}`;
+    }
+
+    function addPermanentTemplate(item){
+      const normalized = normalizeTemplate(item);
+      if(!normalized.text) return { ok:false, reason:'empty' };
+      const templates = getPermanentTemplates();
+      const key = templateMatchKey(normalized);
+      const exists = templates.some(t => templateMatchKey(t) === key);
+      if(exists) return { ok:false, reason:'duplicate' };
+      templates.push(normalized);
+      setPermanentTemplates(templates);
+      return { ok:true, item:normalized };
+    }
+
+    function updatePermanentTemplate(id, item){
+      const templates = getPermanentTemplates();
+      const target = templates.find(t => t.id === id);
+      if(!target) return { ok:false, reason:'not-found' };
+      const normalized = {
+        ...normalizeTemplate(item),
+        id: target.id,
+        createdAt: target.createdAt || now(),
+        updatedAt: now()
+      };
+      if(!normalized.text) return { ok:false, reason:'empty' };
+      const key = templateMatchKey(normalized);
+      const exists = templates.some(t => t.id !== id && templateMatchKey(t) === key);
+      if(exists) return { ok:false, reason:'duplicate' };
+      const updated = templates.map(t => t.id === id ? normalized : t);
+      setPermanentTemplates(updated);
+      return { ok:true, item:normalized };
+    }
+
+    function removePermanentTemplate(id){
+      const remain = getPermanentTemplates().filter(item => item.id !== id);
+      setPermanentTemplates(remain);
+      if(editingTemplateId === id) setPlanEditMode(null);
+      loadDefaultWorkTemplates();
+      updateHomeStats();
+    }
+
+    function resetPermanentTemplates(){
+      if(!confirm('清空所有永久任務 Card？此操作不能還原。')) return;
+      setPermanentTemplates([]);
+      loadDefaultWorkTemplates();
+      updateHomeStats();
+    }
+
+    function pruneHistory24(){
+      const cutoff = now() - 24*60*60*1000;
+      const pruned = getHistory24().filter(x => (x.createdAt || 0) >= cutoff || (x.updatedAt || 0) >= cutoff || (x.archivedAt || 0) >= cutoff);
+      setHistory24(pruned);
+      return pruned;
+    }
+
+    function moveOldTodayTodosToHistory(){
+      const all = getTodayTodos();
+      const today = todayStr();
+      const todayItems = [];
+      const oldItems = [];
+      all.forEach(item => {
+        if(item.date === today) todayItems.push(item);
+        else oldItems.push({...item, archivedAt: now(), archivedReason: 'date-rollover'});
+      });
+      if(oldItems.length){
+        const merged = pruneHistory24().concat(oldItems);
+        setHistory24(merged);
+      }
+      setTodayTodos(todayItems);
+    }
+
+    function showPage(id){
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      if(id === 'pageHome') updateHomeStats();
+      if(id === 'pagePlan') loadDefaultWorkTemplates();
+      if(id === 'pageToday') refreshTodayPage();
+    }
+    function goHome(){ showPage('pageHome'); }
+
+    function updateHomeStats(){
+      moveOldTodayTodosToHistory();
+      const todos = getTodayTodos();
+      const hist = pruneHistory24();
+      const templates = getAllTemplateCards();
+      document.getElementById('homeTodayCount').textContent = todos.length;
+      document.getElementById('homeDoneCount').textContent = todos.filter(x => x.status === 'done').length;
+      document.getElementById('homeFocusCount').textContent = todos.filter(x => x.focused).length;
+      document.getElementById('home24Count').textContent = hist.length;
+      document.getElementById('homeTemplateCount').textContent = templates.length;
+    }
+
+    function loadDefaultWorkTemplates(){
+      document.getElementById('planDateTime').textContent = fmtDateTime();
+      const box = document.getElementById('planTodoCards');
+      box.innerHTML = '';
+      const templates = getAllTemplateCards();
+      templates.forEach(addPlanTodoCard);
+      document.getElementById('planTemplateCount').textContent = templates.length;
+      setPlanEditMode(null);
+      clearPlanInput();
+    }
+
+    function getInputTaskPayload(){
+      const text = (document.getElementById('planNewTodo').value || '').trim();
+      const category = document.getElementById('planNewCategory').value;
+      const priority = document.getElementById('planNewPriority').value;
+      const minutesRaw = document.getElementById('planNewMinutes').value;
+      const minutes = minutesRaw === '' ? null : Math.max(0, Math.round(Number(minutesRaw) || 0));
+      if(!text) return null;
+      return { text, category, priority, minutes };
+    }
+
+    function clearPlanInput(){
+      document.getElementById('planNewTodo').value = '';
+      document.getElementById('planNewCategory').value = 'Admin';
+      document.getElementById('planNewPriority').value = 'P2';
+      document.getElementById('planNewMinutes').value = '';
+    }
+
+    function setPlanInputFromTemplate(item){
+      document.getElementById('planNewTodo').value = item.text || '';
+      document.getElementById('planNewCategory').value = item.category || 'Others';
+      document.getElementById('planNewPriority').value = item.priority || 'P2';
+      document.getElementById('planNewMinutes').value = item.minutes == null ? '' : item.minutes;
+    }
+
+    function setPlanEditMode(id){
+      editingTemplateId = id || null;
+      const saveBtn = document.getElementById('planTemplateSaveBtn');
+      const cancelBtn = document.getElementById('planTemplateCancelBtn');
+      const status = document.getElementById('planEditStatus');
+      if(editingTemplateId){
+        saveBtn.textContent = '更新永久任務 Card';
+        cancelBtn.style.display = '';
+        status.textContent = '模式：編輯永久任務 Card';
+      } else {
+        saveBtn.textContent = '新增永久任務 Card';
+        cancelBtn.style.display = 'none';
+        status.textContent = '模式：新增永久任務 Card';
+      }
+    }
+
+    function cancelPlanTemplateEdit(){
+      setPlanEditMode(null);
+      clearPlanInput();
+    }
+
+    function buildTaskDisplay(item){
+      const durTag = item.minutes ? `<span class="pill">${item.minutes}m</span>` : '';
+      const catTag = item.category ? `<span class="pill">${escapeHtml(item.category)}</span>` : '';
+      const priTag = item.priority ? `<span class="pill">${escapeHtml(item.priority)}</span>` : '';
+      return `${escapeHtml(item.text)} ${priTag}${catTag}${durTag}`;
+    }
+
+    function addPlanTodoCard(item){
+      const box = document.getElementById('planTodoCards');
+      const id = uid();
+      const label = document.createElement('label');
+      label.className = 'todo-card';
+      label.innerHTML = `
+        <input type="checkbox" id="${id}" />
+        <div>
+          <div class="todo-title">${buildTaskDisplay(item)}</div>
+          <div class="todo-meta">點選後會加入今天工作任務池</div>
+        </div>
+        <div class="template-card-actions">
+          <div class="small">${escapeHtml(item.priority || 'P2')}</div>
+          ${item.id ? `<button type="button" data-template-edit="${item.id}">Edit</button> <button type="button" class="btn-danger" data-template-delete="${item.id}">Delete</button>` : ''}
+        </div>
+      `;
+      label.dataset.payload = JSON.stringify(item);
+      label.addEventListener('click', (e) => {
+        const target = e.target;
+        if(target && target.matches('[data-template-edit]')){
+          e.preventDefault();
+          e.stopPropagation();
+          startEditPermanentTemplate(target.getAttribute('data-template-edit'));
+          return;
+        }
+        if(target && target.matches('[data-template-delete]')){
+          e.preventDefault();
+          e.stopPropagation();
+          removePermanentTemplate(target.getAttribute('data-template-delete'));
+          return;
+        }
+        const cb = label.querySelector('input');
+        if(e.target.tagName.toLowerCase() !== 'input'){
+          cb.checked = !cb.checked;
+          e.preventDefault();
+        }
+        label.classList.toggle('selected', cb.checked);
+      });
+      box.appendChild(label);
+    }
+
+    function startEditPermanentTemplate(id){
+      const item = getPermanentTemplates().find(x => x.id === id);
+      if(!item){
+        alert('找不到這張永久任務 Card');
+        return;
+      }
+      setPlanInputFromTemplate(item);
+      setPlanEditMode(id);
+      document.getElementById('planNewTodo').focus();
+    }
+
+    function upsertPlanTemplateFromInput(){
+      const payload = getInputTaskPayload();
+      if(!payload){
+        alert('請先輸入工作項目');
+        return;
+      }
+
+      if(editingTemplateId){
+        const result = updatePermanentTemplate(editingTemplateId, payload);
+        if(result.reason === 'duplicate'){
+          alert('更新後會與另一張任務 Card 重複');
+          return;
+        }
+        if(!result.ok){
+          alert('更新永久任務 Card 失敗');
+          return;
+        }
+        loadDefaultWorkTemplates();
+        updateHomeStats();
+        alert('已更新永久任務 Card');
+        return;
+      }
+
+      const result = addPermanentTemplate(payload);
+      if(result.reason === 'duplicate'){
+        alert('這張任務 Card 已經存在');
+        return;
+      }
+      loadDefaultWorkTemplates();
+      updateHomeStats();
+      alert('已新增永久任務 Card，下次打開仍可選擇');
     }
 
     function saveInputDirectToTodayPlanned(){
@@ -800,6 +1869,15 @@
       ok('priorityWeight(P3) === 3', priorityWeight('P3') === 3);
       ok('DEFAULT_WORK_TEMPLATES is empty', Array.isArray(DEFAULT_WORK_TEMPLATES) && DEFAULT_WORK_TEMPLATES.length === 0);
       ok('getPriorityClass(P2) works', getPriorityClass('P2') === 'priority-p2');
+      ok('permanent templates can save unique cards', (() => {
+        const backup = getPermanentTemplates();
+        setPermanentTemplates([]);
+        const r1 = addPermanentTemplate({text:'Email follow up', category:'Email', priority:'P1', minutes:20});
+        const r2 = addPermanentTemplate({text:'Email follow up', category:'Email', priority:'P1', minutes:20});
+        const current = getPermanentTemplates();
+        setPermanentTemplates(backup);
+        return r1.ok === true && r2.ok === false && current.length === 1;
+      })());
       ok('buildTodayExportText is string after temp save', (() => {
         const backup = getTodayTodos();
         setTodayTodos(demo.map((x,i)=>({...x,id:'t'+i,date:todayStr(),updatedAt:3,source:'test',minutes:30,displayText:x.text})));
@@ -821,3 +1899,7 @@
   </script>
 </body>
 </html>
+
+
+
+
